@@ -1,0 +1,4 @@
+|CLIMATE,windy,rainy,sunny,cloudy|
+|ANIMALS,dog,cat,lion,cow,tiger|
+|TOYS,cars,dolls,rockets,balls|
+`
