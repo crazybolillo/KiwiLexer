@@ -1,12 +1,12 @@
-#include "TreeData.h"
+#include "Tokenizer.h"
 
 
 /*
 Creates a LinkedChild 
 */
-struct LinkedChild *create_linkchild(char *value)
+struct TokenValue *create_linkchild(char *value)
 {
-	struct LinkedChild *retval = malloc(sizeof(struct LinkedChild));
+	struct TokenValue *retval = malloc(sizeof(struct TokenValue));
 	retval->value = value;
 	retval->next = NULL;
 	return retval;
@@ -19,14 +19,14 @@ this branch contains. This method copies the id passed trough
 the parameters up until the point indicated by the 'idsize' variable
 and terminates it with a NUL character.
 */
-struct LinkedParent *create_linkedparent(char *id, int idsize)
+struct Token *createToken(char *id, int idsize)
 {
-	struct LinkedParent *retval = malloc(sizeof(struct LinkedParent));
+	struct Token *retval = malloc(sizeof(struct Token));
 	retval->next = NULL;
 	retval->id = malloc((sizeof(char) * idsize) + 1);
 	retval->sons = NULL;
 	memset(retval->id, 0x00, idsize + 1);
-	_memccpy(retval->id, id, 1, idsize);
+	memcpy(retval->id, id, idsize);
 	return retval;
 }
 
@@ -34,7 +34,7 @@ struct LinkedParent *create_linkedparent(char *id, int idsize)
 Returns the index where the LinkedParent with the identifier passed trough the parameters
 is found inside the LinkedParent list. Returns -1 if the branch was not found.
 */
-int branch_index(char *id, int idsize, struct LinkedParent head)
+int tokenIndex(char *id, int idsize, struct Token head)
 {
 	for (int x = 0; head.next != NULL; x++) {
 		if (strncmp(head.id, id, idsize) == 0)
@@ -50,19 +50,20 @@ to add it to the tree and cero if it WAS NOT able to add it. If the method
 was not able to add the branch into the structure it is very probable that
 a branch with the same identifier already exists in the tree structure.
 */
-int add_branch(struct LinkedParent *branch, struct LinkedParent *head)
+int insertToken(struct Token *branch, struct Token *head)
 {
-	if (head == NULL) {
-		head = branch;
-	}
-	else if (head->next == NULL) {
+	if (head->next == NULL) {
 		head->next = branch;
 		return 1;
 	}
 	else {
-		struct LinkedParent *temp = head;
+		struct Token *temp = malloc(sizeof(struct Token));
+		temp->id = head->next->id;
+		temp->next = head->next->next;
+		temp->sons = head->next->sons;
+
 		branch->next = temp;
-		head = branch;
+		head->next = branch;
 	}
 
 	return 1;
@@ -73,11 +74,11 @@ Adds a new word to the branch. Returns 1 if it was able to add the word to the b
 Cero if it was not. If the method is not able to add the word it means that the 
 word already exists.
 */
-int add_word(char *word, int wordsize, struct LinkedParent *branch)
+int insertTokenValue(char *word, int wordsize, struct Token *branch)
 {
 	char *allocword = malloc(sizeof(char) * (wordsize + 1));
 	memset(allocword, 0x00, wordsize + 1);
-	_memccpy(allocword, word, 1, wordsize);
+	memcpy(allocword, word, wordsize);
 
 	if (branch->sons == NULL) {
 		branch->sons = create_linkchild(allocword);
@@ -86,12 +87,12 @@ int add_word(char *word, int wordsize, struct LinkedParent *branch)
 		branch->sons->next = create_linkchild(allocword);
 	}
 	else {
-		struct LinkedChild *temp = malloc(sizeof(struct LinkedChild));
+		struct TokenValue *temp = malloc(sizeof(struct TokenValue));
 		temp->value = branch->sons->value;
 		temp->next = branch->sons->next;
 		free(branch->sons);
 
-		struct LinkedChild *head = create_linkchild(allocword);
+		struct TokenValue *head = create_linkchild(allocword);
 		head->next = temp;
 		branch->sons = head;
 	}
@@ -103,7 +104,7 @@ Reads a whole file and returns a char buffer with the text it contained. The
 FILE pointer must be opened in text form. Sets the integer pointer passed
 trough the parameters to the numbers of chars read.
 */
-char *readfile(FILE *fl, int *size)
+char *readAll(FILE *fl, int *size)
 {
 	char *rdata = NULL;
 	int sector = 512;
@@ -139,22 +140,22 @@ int skipchar(char *ptr, char until)
 
 /*
 */
-struct LinkedParent *parsetoken(char **grammar) 
+struct Token *parsetoken(char **grammar) 
 {
 	int idlen = skipchar(*grammar, ',');
-	struct LinkedParent *retroot = create_linkedparent(*grammar, idlen);
+	struct Token *retroot = createToken(*grammar, idlen);
 	idlen++; //Skip comma.
 	*grammar += idlen;
 
 	while (1) {
 		for (int len = 0;; (*grammar)++, len++) {
 			if (**grammar == ',') {
-				add_word(*grammar - len, len, retroot);
+				insertTokenValue(*grammar - len, len, retroot);
 				(*grammar)++;
 				break;
 			}
 			else if (**grammar == '|') {
-				add_word(*grammar - len, len, retroot);
+				insertTokenValue(*grammar - len, len, retroot);
 				(*grammar)++;
 				return retroot;
 			}
@@ -165,12 +166,13 @@ struct LinkedParent *parsetoken(char **grammar)
 
 /*
 */
-struct LinkedParent *parse_grammar(char *grammar)
+struct Token *createTokenizer(char *grammar)
 {
-	struct LinkedParent *retroot = malloc(sizeof(struct LinkedParent));
-	retroot ->id = "Parent";
-	retroot->next = NULL;
-	retroot->sons = NULL;
+	int len = skipchar(grammar, '|');
+	len++;
+	grammar += len;
+	struct Token *retroot = parsetoken(&grammar);
+
 	while(1){
 		for (;; grammar++) {
 			if (*grammar == '|') {
@@ -181,19 +183,40 @@ struct LinkedParent *parse_grammar(char *grammar)
 				return retroot;
 			}
 		}
-		add_branch(parsetoken(&grammar), retroot);
+		insertToken(parsetoken(&grammar), retroot);
 	}
 }
 
-void debug_print_token(struct LinkedParent holder) 
+/*
+Frees all memory used by the tokenizer passed trough the parameters.
+*/
+void destroyTokenizer(struct Token *head)
 {
-	while (holder.next != NULL) {
-		printf("TOKENS: %s\n", holder.next->id);
-		while (holder.next->sons != NULL) {
-			printf("%s\n", holder.next->sons->value);
-			holder.next->sons = holder.next->sons->next;
+	while (head != NULL) {
+		while (head->sons != NULL) {
+			struct TokenValue *next = head->sons->next;
+			free(head->sons);
+			head->sons = next;
 		}
-		printf("----------");
-		holder.next = holder.next->next;
+		struct Token *nextHead = head->next;
+		free(head);
+		head = nextHead;
 	}
+}
+
+void debug_print_token(struct Token *holder) 
+{
+	struct Token *head = holder;
+	while (holder != NULL) {
+		printf("TOKENS: %s\n", holder->id);
+		struct TokenValue *childhead = holder->sons;
+		while (holder->sons != NULL) {
+			printf("%s\n", holder->sons->value);
+			holder->sons = holder->sons->next;
+		}
+		holder->sons = childhead;
+		printf("----------\n");
+		holder = holder->next;
+	}
+	holder = head;
 }
