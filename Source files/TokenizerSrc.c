@@ -195,11 +195,13 @@ void destroyTokenizer(struct Token *head)
 	while (head != NULL) {
 		while (head->sons != NULL) {
 			struct TokenValue *next = head->sons->next;
+            free(head->sons->value);
 			free(head->sons);
 			head->sons = next;
 		}
 		struct Token *nextHead = head->next;
-		free(head);
+		free(head->id);
+        free(head);
 		head = nextHead;
 	}
 }
