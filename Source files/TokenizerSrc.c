@@ -61,6 +61,7 @@ int insertToken(struct Token *branch, struct Token *head)
 		temp->id = head->next->id;
 		temp->next = head->next->next;
 		temp->sons = head->next->sons;
+		free(head->next);
 
 		branch->next = temp;
 		head->next = branch;

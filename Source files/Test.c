@@ -2,7 +2,7 @@
 
 void main()
 {
-	FILE *fl = fopen("grammarOne.txt", "r");
+    FILE *fl = fopen("grammarOne.txt", "r");
 	if(fl == NULL){
 		return;	
 	}
@@ -13,5 +13,5 @@ void main()
 	struct Token *tokenizer = createTokenizer(grammar);
     free(grammar);
 	debug_print_token(tokenizer);
-	destroyTokenizer(tokenizer);
+    destroyTokenizer(tokenizer);
 }
