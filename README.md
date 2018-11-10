@@ -26,5 +26,5 @@ trip down memory lane and read places it should not read. Here is an example whe
 ```
 |ANIMALS,dog,cow,lion,tiger|
 |CLIMATE,sunny,windy,rainy|
-|FRUITS,apple,banana,
+|FRUITS,apple,banana,mango,kiwi|`
 ```
