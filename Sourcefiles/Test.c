@@ -16,11 +16,12 @@ void main()
 	debug_print_token(tokenizer);
 
 	int toksize = 0;
-	char *testString = "windy, dog, cars, pizza, c, taco";
+	char *testString = "windy, dog, taco, blue, hello, sunny, cloudy";
 	struct Token *tokenstream = tokenizeAll(testString, strlen(testString), &toksize,
 		tokenizer);
 
 	debug_print_tokens(tokenstream, toksize);
 
 	destroyTokenizer(tokenizer);
+	destroyTokenStream(tokenstream, toksize);
 }

@@ -86,15 +86,19 @@ struct Token *tokenizeAll(char *sentence, int sensize, int *size,
 	return retval;
 }
 
-void destroyTokenStream(struct Token *ptr, int size) {
-	for (int x = 0; x < size; x++)
-		free((ptr + x));
+void destroyTokenStream(struct Token *ptr, int size)
+{
+	for (int x = 0; x < size; x++) {
+	    free((ptr + x)->type);
+	    free((ptr + x)->value);
+	}
+	free(ptr);
 }
 
 void debug_print_tokens(struct Token *sentence, int size)
 {
 	for (int x = 0; x < size; x++) {
-		printf("%s ===", (sentence + x)->type);
+		printf("%s ---> ", (sentence + x)->type);
 		printf("%s\n", (sentence + x)->value);
 	}
 }

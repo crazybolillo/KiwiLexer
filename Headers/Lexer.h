@@ -18,7 +18,9 @@ struct Token tokenizeWord(char *word, int size,
 	struct LinkedToken *tokenizer);
 struct Token *tokenizeAll(char *sentence, int sensize, int *size,
 	struct LinkedToken *tokenizer);
-
+	
+	
+void destroyTokenStream(struct Token *token, int size);
 void debug_print_tokens(struct Token *tokens, int size);
 
 
