@@ -1,12 +1,9 @@
 #include "Tokenizer.h"
 
 
-/*
-Creates a LinkedChild 
-*/
-struct TokenValue *create_linkchild(char *value)
+struct LinkedLexeme *createLexeme(char *value)
 {
-	struct TokenValue *retval = malloc(sizeof(struct TokenValue));
+	struct LinkedLexeme *retval = malloc(sizeof(struct LinkedLexeme));
 	retval->value = value;
 	retval->next = NULL;
 	return retval;
@@ -19,44 +16,26 @@ this branch contains. This method copies the id passed trough
 the parameters up until the point indicated by the 'idsize' variable
 and terminates it with a NUL character.
 */
-struct Token *createToken(char *id, int idsize)
+struct LinkedToken *createLinkedToken(char *id, int idsize)
 {
-	struct Token *retval = malloc(sizeof(struct Token));
+	struct LinkedToken *retval = malloc(sizeof(struct LinkedToken));
 	retval->next = NULL;
-	retval->id = calloc(idsize + 1, sizeof(char));
+	retval->id = malloc((sizeof(char) * idsize) + 1);
 	retval->sons = NULL;
+	memset(retval->id, 0x00, idsize + 1);
 	memcpy(retval->id, id, idsize);
 	return retval;
 }
 
-/*
-Returns the index where the LinkedParent with the identifier passed trough the parameters
-is found inside the LinkedParent list. Returns -1 if the branch was not found.
-*/
-int tokenIndex(char *id, int idsize, struct Token head)
-{
-	for (int x = 0; head.next != NULL; x++) {
-		if (strncmp(head.id, id, idsize) == 0)
-			return x;
-		head = *head.next;
-	}
-	return -1;
-}
 
-/*
-Tries to add the branch to the tree structure. Returns one if it was able
-to add it to the tree and cero if it WAS NOT able to add it. If the method
-was not able to add the branch into the structure it is very probable that
-a branch with the same identifier already exists in the tree structure.
-*/
-int insertToken(struct Token *branch, struct Token *head)
+int insertToken(struct LinkedToken *branch, struct LinkedToken *head)
 {
 	if (head->next == NULL) {
 		head->next = branch;
 		return 1;
 	}
 	else {
-		struct Token *temp = malloc(sizeof(struct Token));
+		struct LinkedToken *temp = malloc(sizeof(struct LinkedToken));
 		temp->id = head->next->id;
 		temp->next = head->next->next;
 		temp->sons = head->next->sons;
@@ -65,7 +44,6 @@ int insertToken(struct Token *branch, struct Token *head)
 		branch->next = temp;
 		head->next = branch;
 	}
-
 	return 1;
 }
 
@@ -74,24 +52,25 @@ Adds a new word to the branch. Returns 1 if it was able to add the word to the b
 Cero if it was not. If the method is not able to add the word it means that the 
 word already exists.
 */
-int insertTokenValue(char *word, int wordsize, struct Token *branch)
+int insertTokenValue(char *word, int wordsize, struct LinkedToken *branch)
 {
-	char *allocword = calloc(wordsize + 1, sizeof(char));
+	char *allocword = malloc(sizeof(char) * (wordsize + 1));
+	memset(allocword, 0x00, wordsize + 1);
 	memcpy(allocword, word, wordsize);
 
 	if (branch->sons == NULL) {
-		branch->sons = create_linkchild(allocword);
+		branch->sons = createLexeme(allocword);
 	}
 	else if (branch->sons->next == NULL) {
-		branch->sons->next = create_linkchild(allocword);
+		branch->sons->next = createLexeme(allocword);
 	}
 	else {
-		struct TokenValue *temp = malloc(sizeof(struct TokenValue));
+		struct LinkedLexeme *temp = malloc(sizeof(struct LinkedLexeme));
 		temp->value = branch->sons->value;
 		temp->next = branch->sons->next;
 		free(branch->sons);
 
-		struct TokenValue *head = create_linkchild(allocword);
+		struct LinkedLexeme *head = createLexeme(allocword);
 		head->next = temp;
 		branch->sons = head;
 	}
@@ -139,21 +118,21 @@ int skipchar(char *ptr, char until)
 
 /*
 */
-struct Token *parsetoken(char **grammar) 
+struct LinkedToken *parsetoken(char **grammar) 
 {
-	int idlen = skipchar(*grammar, ',');
-	struct Token *retroot = createToken(*grammar, idlen);
+	int idlen = skipchar(*grammar, TOKEN_SEPARATOR);
+	struct LinkedToken *retroot = createLinkedToken(*grammar, idlen);
 	idlen++; //Skip comma.
 	*grammar += idlen;
 
 	while (1) {
 		for (int len = 0;; (*grammar)++, len++) {
-			if (**grammar == ',') {
+			if (**grammar == TOKEN_SEPARATOR) {
 				insertTokenValue(*grammar - len, len, retroot);
 				(*grammar)++;
 				break;
 			}
-			else if (**grammar == '|') {
+			else if (**grammar == TOKEN_LIMIT) {
 				insertTokenValue(*grammar - len, len, retroot);
 				(*grammar)++;
 				return retroot;
@@ -165,20 +144,20 @@ struct Token *parsetoken(char **grammar)
 
 /*
 */
-struct Token *createTokenizer(char *grammar)
+struct LinkedToken *createTokenizer(char *grammar)
 {
-	int len = skipchar(grammar, '|');
+	int len = skipchar(grammar, TOKEN_LIMIT);
 	len++;
 	grammar += len;
-	struct Token *retroot = parsetoken(&grammar);
+	struct LinkedToken *retroot = parsetoken(&grammar);
 
 	while(1){
 		for (;; grammar++) {
-			if (*grammar == '|') {
+			if (*grammar == TOKEN_LIMIT) {
 				grammar++;
 				break;
 			}
-			else if (*grammar == '`') {
+			else if (*grammar == TOKEN_END) {
 				return retroot;
 			}
 		}
@@ -189,28 +168,28 @@ struct Token *createTokenizer(char *grammar)
 /*
 Frees all memory used by the tokenizer passed trough the parameters.
 */
-void destroyTokenizer(struct Token *head)
+void destroyTokenizer(struct LinkedToken *head)
 {
 	while (head != NULL) {
 		while (head->sons != NULL) {
-			struct TokenValue *next = head->sons->next;
+			struct LinkedLexeme *next = head->sons->next;
             free(head->sons->value);
 			free(head->sons);
 			head->sons = next;
 		}
-		struct Token *nextHead = head->next;
+		struct LinkedToken *nextHead = head->next;
 		free(head->id);
         free(head);
 		head = nextHead;
 	}
 }
 
-void debug_print_token(struct Token *holder) 
+void debug_print_token(struct LinkedToken *holder) 
 {
-	struct Token *head = holder;
+	struct LinkedToken *head = holder;
 	while (holder != NULL) {
 		printf("TOKENS: %s\n", holder->id);
-		struct TokenValue *childhead = holder->sons;
+		struct LinkedLexeme *childhead = holder->sons;
 		while (holder->sons != NULL) {
 			printf("%s\n", holder->sons->value);
 			holder->sons = holder->sons->next;

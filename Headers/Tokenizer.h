@@ -5,42 +5,42 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <assert.h>
 
 /*
 Header destined to manage the data structure the tokenizer depends on. LinkedLists.
-Tokens consist of a "LinkedParent" with its ID, the next Token in the list and 
-a "LinkedChild" which consists of the words or symbols which form part of that token. 
+Tokens consist of a "LinkedToken" with its ID, the next Token in the list and 
+a "LinkedLexeme" which consists of the words or symbols which form part of that token. 
 
-A "LinkedChild" consists of just a char pointer terminated with a NUL character, basically
+A "LinkedLexeme" consists of just a char pointer terminated with a NUL character, basically
 a string and a pointer to the next LinkedChild in the list. 
-
-LinkedLists were chosen since they allow for easy looping and insertion of new data.
 */
 
-struct TokenValue {
+#define TOKEN_LIMIT '|'
+#define TOKEN_SEPARATOR ','
+#define TOKEN_END '`'
+
+struct LinkedLexeme {
 	char *value;
-	struct TokenValue *next;
+	struct LinkedLexeme *next;
 };
 
-struct Token {
+struct LinkedToken {
 	char *id;
-	struct TokenValue *sons;
-	struct Token *next;
+	struct LinkedLexeme *sons;
+	struct LinkedToken *next;
 };
 
-struct Token *createToken(char *id, int idsize);
+struct LinkedToken *createLinkedToken(char *id, int idsize);
+struct LinkedLexeme *createLexeme(char *value);
 
-int tokenIndex(char *id, int idsize, struct Token root);
-int insertToken(struct Token *branch, struct Token *root);
-
-int insertTokenValue(char *word, int wordsize, struct Token *branch);
+int insertToken(struct LinkedToken *branch, struct LinkedToken *root);
+int insertTokenValue(char *word, int wordsize, struct LinkedToken *branch);
 
 char *readAll(FILE *fl, int *size);
 int skipchar(char *ptr, char until);
-struct Token *createTokenizer(char *grammar);
-void destroyTokenizer(struct Token *head);
+struct LinkedToken *createTokenizer(char *grammar);
+void destroyTokenizer(struct LinkedToken *head);
 
-void debug_print_token(struct Token *tokenizer);
+void debug_print_token(struct LinkedToken *tokenizer);
 
 #endif
