@@ -38,6 +38,7 @@ int insertTokenValue(char *word, int wordsize, struct LinkedToken *branch);
 
 char *readAll(FILE *fl, int *size);
 int skipchar(char *ptr, char until);
+struct LinkedToken *parseToken(char **grammar);
 struct LinkedToken *createTokenizer(char *grammar);
 void destroyTokenizer(struct LinkedToken *head);
 

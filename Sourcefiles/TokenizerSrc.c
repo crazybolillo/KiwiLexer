@@ -118,7 +118,7 @@ int skipchar(char *ptr, char until)
 
 /*
 */
-struct LinkedToken *parsetoken(char **grammar) 
+struct LinkedToken *parseToken(char **grammar) 
 {
 	int idlen = skipchar(*grammar, TOKEN_SEPARATOR);
 	struct LinkedToken *retroot = createLinkedToken(*grammar, idlen);
@@ -147,12 +147,12 @@ struct LinkedToken *createTokenizer(char *grammar)
 	int len = skipchar(grammar, TOKEN_LIMIT);
 	len++;
 	grammar += len;
-	struct LinkedToken *retroot = parsetoken(&grammar);
+	struct LinkedToken *retroot = parseToken(&grammar);
 
 	for(; *grammar != TOKEN_END; grammar++){
 		if (*grammar == TOKEN_LIMIT) {
 			grammar++;
-			insertToken(parsetoken(&grammar), retroot);
+			insertToken(parseToken(&grammar), retroot);
 		}
 	}
 	return retroot;

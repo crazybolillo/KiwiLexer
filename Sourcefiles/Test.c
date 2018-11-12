@@ -3,7 +3,7 @@
 
 void main()
 {
-	FILE *fl = fopen("grammarOne.txt", "r");
+	FILE *fl = fopen("C:/Users/Antonio/source/repos/KiwiLexer/KiwiLexer/KiwiLexer/KiwiLexer/Sourcefiles/grammarOne.txt", "r");
 	if(fl == NULL){
 		return;	
 	}
@@ -16,8 +16,7 @@ void main()
 	debug_print_token(tokenizer);
 
 	int toksize = 0;
-	char *testString = "windy, dog, taco   , blue, hello,sunny, cloudy, c,\
-	\t unknown, \t\t\n rainy";
+	char *testString = "\t\ttaco,\nrainy bluekiwi, hello, cloudy \t rainy";
 	struct Token *tokenstream = tokenizeAll(testString, strlen(testString), &toksize,
 		tokenizer);
 

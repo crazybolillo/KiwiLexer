@@ -3,9 +3,10 @@
 
 #include "Tokenizer.h"
 
-#define LIMIT_ONE ' '
-#define LIMIT_TWO ','
-#define LIMIT_THREE '\t'
+#define SPACE ' '
+#define COMMA ','
+#define TAB '\t'
+#define NLINE '\n'
 
 
 struct Token {
@@ -13,7 +14,7 @@ struct Token {
 	char *value;
 };
 
-int skipchar_two(char *ptr, char untilon, char untiltw, int limit);
+int skipUntilLimit(char *ptr, int limit);
 struct Token createToken(char *type, char *value, int valsize);
 struct Token tokenizeWord(char *word, int size, 
 	struct LinkedToken *tokenizer);
