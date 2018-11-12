@@ -5,6 +5,7 @@
 
 #define LIMIT_ONE ' '
 #define LIMIT_TWO ','
+#define LIMIT_THREE '\t'
 
 
 struct Token {

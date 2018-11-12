@@ -16,7 +16,8 @@ void main()
 	debug_print_token(tokenizer);
 
 	int toksize = 0;
-	char *testString = "windy, dog, taco, blue, hello, sunny, cloudy";
+	char *testString = "windy, dog, taco   , blue, hello,sunny, cloudy, c,\
+	\t unknown, \t\t\n rainy";
 	struct Token *tokenstream = tokenizeAll(testString, strlen(testString), &toksize,
 		tokenizer);
 

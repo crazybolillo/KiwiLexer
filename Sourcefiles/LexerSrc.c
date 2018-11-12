@@ -9,7 +9,7 @@ memory access.
 int skipchar_two(char *ptr, char untilon, char untiltw, int limit) {
 	int x = 0; 
 	for (x; x < limit; x++) {
-		if (*(ptr + x) == untilon || *(ptr + x) == untiltw)
+		if ((*(ptr + x) == untilon) || (*(ptr + x) == untiltw))
 			return x;
 	}
 	return x;
@@ -71,7 +71,8 @@ struct Token *tokenizeAll(char *sentence, int sensize, int *size,
 	int tokencount = 0;
 	struct Token *retval = NULL;
 	for (; x < sensize; x++, sentence++) {
-		if (*sentence != LIMIT_ONE && *sentence != LIMIT_TWO) {
+		if ((*sentence != LIMIT_ONE) && (*sentence != LIMIT_TWO) &&
+		        (*sentence != LIMIT_THREE)) {
 			int len = 
 				skipchar_two(sentence, LIMIT_ONE, LIMIT_TWO, sensize - x);
 			tokencount++;

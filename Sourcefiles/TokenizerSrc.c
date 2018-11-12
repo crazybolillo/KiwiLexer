@@ -124,21 +124,19 @@ struct LinkedToken *parsetoken(char **grammar)
 	struct LinkedToken *retroot = createLinkedToken(*grammar, idlen);
 	idlen++; //Skip comma.
 	*grammar += idlen;
-
-	while (1) {
-		for (int len = 0;; (*grammar)++, len++) {
-			if (**grammar == TOKEN_SEPARATOR) {
-				insertTokenValue(*grammar - len, len, retroot);
-				(*grammar)++;
-				break;
-			}
-			else if (**grammar == TOKEN_LIMIT) {
-				insertTokenValue(*grammar - len, len, retroot);
-				(*grammar)++;
-				return retroot;
-			}
+    
+    int len = 0;
+	for (; **grammar != TOKEN_LIMIT; (*grammar)++, len++) {
+		if (**grammar == TOKEN_SEPARATOR) {
+			insertTokenValue(*grammar - len, len, retroot);
+			(*grammar)++;
+			len = 0;
+		    continue;
 		}
-	}
+	}	
+	insertTokenValue(*grammar - len, len, retroot);
+	(*grammar)++;
+	return retroot;
 
 }
 
@@ -151,18 +149,13 @@ struct LinkedToken *createTokenizer(char *grammar)
 	grammar += len;
 	struct LinkedToken *retroot = parsetoken(&grammar);
 
-	while(1){
-		for (;; grammar++) {
-			if (*grammar == TOKEN_LIMIT) {
-				grammar++;
-				break;
-			}
-			else if (*grammar == TOKEN_END) {
-				return retroot;
-			}
+	for(; *grammar != TOKEN_END; grammar++){
+		if (*grammar == TOKEN_LIMIT) {
+			grammar++;
+			insertToken(parsetoken(&grammar), retroot);
 		}
-		insertToken(parsetoken(&grammar), retroot);
 	}
+	return retroot;
 }
 
 /*
@@ -170,14 +163,16 @@ Frees all memory used by the tokenizer passed trough the parameters.
 */
 void destroyTokenizer(struct LinkedToken *head)
 {
+	struct LinkedToken *nextHead;
+	struct LinkedLexeme *nextSon;
 	while (head != NULL) {
 		while (head->sons != NULL) {
-			struct LinkedLexeme *next = head->sons->next;
+			nextSon = head->sons->next;
             free(head->sons->value);
 			free(head->sons);
-			head->sons = next;
+			head->sons = nextSon;
 		}
-		struct LinkedToken *nextHead = head->next;
+		nextHead = head->next;
 		free(head->id);
         free(head);
 		head = nextHead;
@@ -187,9 +182,10 @@ void destroyTokenizer(struct LinkedToken *head)
 void debug_print_token(struct LinkedToken *holder) 
 {
 	struct LinkedToken *head = holder;
+	struct LinkedLexeme *childhead;
 	while (holder != NULL) {
 		printf("TOKENS: %s\n", holder->id);
-		struct LinkedLexeme *childhead = holder->sons;
+		childhead = holder->sons;
 		while (holder->sons != NULL) {
 			printf("%s\n", holder->sons->value);
 			holder->sons = holder->sons->next;
