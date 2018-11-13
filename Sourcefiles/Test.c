@@ -3,7 +3,7 @@
 
 void main()
 {
-	FILE *fl = fopen("C:/Users/Antonio/source/repos/KiwiLexer/KiwiLexer/KiwiLexer/KiwiLexer/Sourcefiles/grammarOne.txt", "r");
+	FILE *fl = fopen("KiwiLexer/Sourcefiles/grammarOne.txt", "r");
 	if(fl == NULL){
 		return;	
 	}
@@ -11,14 +11,15 @@ void main()
     int size = 0; 
 	char *grammar = readAll(fl, &size);
 	fclose(fl);
-	struct LinkedToken *tokenizer = createTokenizer(grammar);
+	struct Tokenizer *tokenizer = createTokenizer(grammar);
     free(grammar);
-	debug_print_token(tokenizer);
+	printTokenizer(tokenizer);
+
 
 	int toksize = 0;
-	char *testString = "\t\ttaco,\nrainy bluekiwi, hello, cloudy \t rainy";
-	struct Token *tokenstream = tokenizeAll(testString, strlen(testString), &toksize,
-		tokenizer);
+	char *testString = "\t\t20 + \n50 * 10 \n\n + 30 / 10";
+	struct TokenVal *tokenstream = tokenizeAll(testString, strlen(testString), &toksize,
+		*tokenizer);
 
 	debug_print_tokens(tokenstream, toksize);
 

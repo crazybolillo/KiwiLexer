@@ -4,44 +4,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
-/*
-Header destined to manage the data structure the tokenizer depends on. LinkedLists.
-Tokens consist of a "LinkedToken" with its ID, the next Token in the list and 
-a "LinkedLexeme" which consists of the words or symbols which form part of that token. 
 
-A "LinkedLexeme" consists of just a char pointer terminated with a NUL character, basically
-a string and a pointer to the next LinkedChild in the list. 
-*/
-
-#define TOKEN_LIMIT '|'
-#define TOKEN_SEPARATOR ','
+#define TOKEN_LIMIT '~'
+#define TOKEN_SEP_COMMA ','
 #define TOKEN_END '`'
 
-struct LinkedLexeme {
-	char *value;
-	struct LinkedLexeme *next;
-};
 
-struct LinkedToken {
+struct Token {
 	char *id;
-	struct LinkedLexeme *sons;
-	struct LinkedToken *next;
+	int size;
+	char **words;
 };
 
-struct LinkedToken *createLinkedToken(char *id, int idsize);
-struct LinkedLexeme *createLexeme(char *value);
+struct Tokenizer {
+	int tokenCount;
+	struct Token *tokens;
+};
 
-int insertToken(struct LinkedToken *branch, struct LinkedToken *root);
-int insertTokenValue(char *word, int wordsize, struct LinkedToken *branch);
-
+struct Tokenizer *createTokenizer(char *grammar);
+struct Token createToken(char *id, int idsize);
+struct Token parseToken(char **grammar);
+void addWord(struct Token *token, char *lex, int lexsize);
+void destroyTokenizer(struct Tokenizer *tokenizer);
+void printTokenizer(struct Tokenizer *tokenizer);
 char *readAll(FILE *fl, int *size);
 int skipchar(char *ptr, char until);
-struct LinkedToken *parseToken(char **grammar);
-struct LinkedToken *createTokenizer(char *grammar);
-void destroyTokenizer(struct LinkedToken *head);
-
-void debug_print_token(struct LinkedToken *tokenizer);
 
 #endif
