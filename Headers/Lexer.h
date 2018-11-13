@@ -4,26 +4,31 @@
 #include "Tokenizer.h"
 
 #define SPACE ' '
-#define TOKEN_SEP_COMMA ','
-#define TOKEN_SEP_TAB '\t'
-#define TOKEN_SEP_NLINE '\n'
+#define COMMA ','
+#define TAB '\t'
+#define NLINE '\n'
 
 
-struct TokenVal {
+struct Token {
 	char *type;
 	char *value;
 };
 
+struct TokenStream {
+	struct Token *tokens;
+	int size;
+};
+
 int skipUntilLimit(char *ptr, int limit);
-struct TokenVal createTokenVal(char *type, char *value, int valsize);
-struct TokenVal tokenizeWord(char *word, int size, 
-	struct Tokenizer tokenizer);
-struct TokenVal *tokenizeAll(char *sentence, int sensize, int *size,
-	struct Tokenizer tokenizer);
+struct Token createToken(char *type, char *value, int valsize);
+struct Token tokenizeWord(char *word, int size, 
+	struct LinkedToken *tokenizer);
+struct Token *tokenizeAll(char *sentence, int sensize, int *size,
+	struct LinkedToken *tokenizer);
 	
 	
-void destroyTokenStream(struct TokenVal *token, int size);
-void debug_print_tokens(struct TokenVal *tokens, int size);
+void destroyTokenStream(struct Token *token, int size);
+void printTokenStream(struct Token *tokens, int size);
 
 
 #endif
