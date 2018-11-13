@@ -10,7 +10,7 @@ void main()
 	}
 	
     int size = 0; 
-	char *grammar = readAll(fl, &size);
+	char *grammar = readAll(fl, &size, 256);
 	fclose(fl);
 	struct LinkedToken *tokenizer = createTokenizer(grammar);
     free(grammar);

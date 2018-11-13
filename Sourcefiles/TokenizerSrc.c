@@ -1,6 +1,10 @@
 #include "Tokenizer.h"
 
-
+/*
+Creates a Lexeme and sets its value to be the same
+as the char *ptr passed trough the parameters. The
+char pointer must be nul terminated.
+*/
 struct LinkedLexeme *createLexeme(char *value)
 {
 	struct LinkedLexeme *retval = malloc(sizeof(struct LinkedLexeme));
@@ -27,7 +31,9 @@ struct LinkedToken *createLinkedToken(char *id, int idsize)
 	return retval;
 }
 
-
+/*
+Insersts a new LinkedToken into the LinkedList data structure.
+*/
 int insertToken(struct LinkedToken *branch, struct LinkedToken *head)
 {
 	if (head->next == NULL) {
@@ -48,9 +54,7 @@ int insertToken(struct LinkedToken *branch, struct LinkedToken *head)
 }
 
 /*
-Adds a new word to the branch. Returns 1 if it was able to add the word to the branch.
-Cero if it was not. If the method is not able to add the word it means that the 
-word already exists.
+Adds a new word to the branch.
 */
 int insertTokenValue(char *word, int wordsize, struct LinkedToken *branch)
 {
@@ -80,12 +84,13 @@ int insertTokenValue(char *word, int wordsize, struct LinkedToken *branch)
 /*
 Reads a whole file and returns a char buffer with the text it contained. The
 FILE pointer must be opened in text form. Sets the integer pointer passed
-trough the parameters to the numbers of chars read.
+trough the parameters to the numbers of chars read. The sector size denotes
+the amount of bytes that will be read each cycle. The sector size increases by 1
+if feof was not reached in the previous cycle.
 */
-char *readAll(FILE *fl, int *size)
+char *readAll(FILE *fl, int *size, int sector)
 {
 	char *rdata = NULL;
-	int sector = 512;
 	int count = 1;
 	int dataread;
 
@@ -95,7 +100,7 @@ char *readAll(FILE *fl, int *size)
 		dataread = fread(rdata, 1, (sector * count), fl);
 		count++;
 	} while (feof(fl) == 0);
-
+	
 	rdata = realloc(rdata, dataread);
 	return rdata;
 }
@@ -117,6 +122,8 @@ int skipchar(char *ptr, char until)
 }
 
 /*
+Parses the a token definition (everything between to token delimitors)
+into a LinkedList structure.
 */
 struct LinkedToken *parseToken(char **grammar) 
 {
@@ -141,6 +148,9 @@ struct LinkedToken *parseToken(char **grammar)
 }
 
 /*
+Parses the whole string passed trough the parameters (must be
+terminated with `) and returns a LinkedList structure used by the
+Lexer to lex input.
 */
 struct LinkedToken *createTokenizer(char *grammar)
 {
@@ -179,6 +189,10 @@ void destroyTokenizer(struct LinkedToken *head)
 	}
 }
 
+/*
+Prints all the tokens and lexems of the tokenizer passed trough
+the parameters.
+*/
 void printTokenizer(struct LinkedToken *holder) 
 {
 	struct LinkedToken *head = holder;

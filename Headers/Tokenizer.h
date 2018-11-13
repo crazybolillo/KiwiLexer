@@ -35,8 +35,7 @@ struct LinkedLexeme *createLexeme(char *value);
 int insertToken(struct LinkedToken *branch, struct LinkedToken *root);
 int insertTokenValue(char *word, int wordsize, struct LinkedToken *branch);
 
-char *readAll(FILE
-	*fl, int *size);
+char *readAll(FILE *fl, int *size, int sector);
 int skipchar(char *ptr, char until);
 struct LinkedToken *parseToken(char **grammar);
 struct LinkedToken *createTokenizer(char *grammar);
