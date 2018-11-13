@@ -4,6 +4,7 @@ This is a simple lexer that returns a stream of tokens based on grammatical defi
 written down on a simple text file. The tokenizer currently supports this syntax:
 
 ```
+~ANIMALS,dog,cow,lion,tiger~`
 ```
 
 Where '~' delimits the definition for a token and its symbols. Commas ',' separate the different symbols
