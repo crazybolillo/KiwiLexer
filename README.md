@@ -1,8 +1,13 @@
 # KiwiLexer
 Because reinventing the wheel is always fun...
-This is a simple lexer that returns a stream of tokens based on an alphabet. The alphabets need to be 
-written down on a simple text file. The tokenizer currently supports this syntax:
+This is a Lexer focused on simplicty. It has three goals (hopefully it  will have two one day...):
+* Simple, small and readable source code. Everyone should be able to just open a source file and be able to understand it without having to browse the whole repository looking for missing pieces. 
+* Memory efficient. The less memory used the better. I will try to make this program use as little memory as possible. All code is tested
+with valgrind to check for memory leaks too. 
+* Incorportate a parser. In my ideal world you would be able to parse C code with this. At the very least this program will include a simple parser that can be used for command line applications.
 
+## Basics
+The Lexer supports this syntax:
 ```
 ~ANIMALS,dog,cow,lion,tiger~`
 ```
