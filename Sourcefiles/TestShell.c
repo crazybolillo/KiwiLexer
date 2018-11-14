@@ -1,10 +1,11 @@
 #include "Tokenizer.h"
 #include "Lexer.h"
 
+#define CLEAR_COMAND "clear"
+
 #if defined(_WIN32) || defined(_WIN64)
+    #undef CLEAR_COMAND
 	#define CLEAR_COMAND "cls"
-#else
-	#define CLEAR_COMMAND "clear"
 #endif
 
 #define INIT_MSG "KiwiLexer Testing Shell. \"help\" will show available commands.\n"
