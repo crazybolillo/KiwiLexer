@@ -1,6 +1,5 @@
 #include "Lexer.h"
 
-
 /*
 Keeps reading until it finds one of the two characters passed trough
 the parameters or reaches the imposed limit used to avoid illegal
@@ -56,7 +55,23 @@ struct Token tokenizeWord(char *word, int size, struct LinkedToken *tokenizer)
 		tokenizer = tokenizer->next;
 	}
 	tokenizer = tmphead;
-	return createToken("VALUE", word, size);
+	
+	int digit = isNumber(word, size);
+	if (digit > 0) {
+		if (digit == INT_TYPE)
+			return createToken(INT_ID, word, size);
+		else
+			return createToken(DOUBLE_ID, word, size);
+	}
+	else {
+		int string = isString(word, size);
+		if (string == 1) {
+			return createToken(STRING_ID, word, size);
+		}
+		else{
+			return createToken(MIXED_STRING_ID, word, size);
+		}
+	}
 }
 
 
@@ -65,42 +80,94 @@ struct Token tokenizeWord(char *word, int size, struct LinkedToken *tokenizer)
 Reads a whole string of characters until it reaches the limit passed
 trough the parameters and returns an array of Tokens.
 */
-struct Token *tokenizeAll(char *sentence, int sensize, int *size,
+struct TokenStream *tokenizeAll(char *sentence, int sensize, 
 	struct LinkedToken *tokenizer) 
 {
+	struct TokenStream *retval = malloc(sizeof(struct TokenStream));
+	retval->size = 0;
 	int x = 0; 
-	int tokencount = 0;
-	struct Token *retval = NULL;
+	struct Token *tokens = NULL;
 	for (; x < sensize; x++, sentence++) {
 		if ((*sentence != SPACE) && (*sentence != COMMA) &&
 		        (*sentence != TAB) && (*sentence != NLINE)) {
 			int len = 
 				skipUntilLimit(sentence, sensize - x);
-			tokencount++;
-			retval = realloc(retval, sizeof(struct Token) * tokencount);
-			*(retval + tokencount - 1) = tokenizeWord(sentence, len, tokenizer);
+			retval->size++;
+			tokens = realloc(tokens, sizeof(struct Token) * retval->size);
+			*(tokens + retval->size - 1) = tokenizeWord(sentence, len, tokenizer);
 			
 			x += len;
 			sentence += len;
 		}
 	}
-	*size = tokencount;
+	retval->tokens = tokens;
 	return retval;
 }
 
-void destroyTokenStream(struct Token *ptr, int size)
+/*
+Iterates trough the char pointer up n times where
+n is the integer passed trough the parameters. Returns 0 
+if it is not a string. INT_TYPE(1) if it is an Integer and 
+DOUBLE_TYPE(2) if it is a double (has a decimal point). Any 
+sequence of characters that represents number and hast at max
+one '.' and one '-' will be considered numbers by this function.
+*/
+int isNumber(char *value, int size)
 {
+	int pointflag = 0;
+	int minusflag = 0;
 	for (int x = 0; x < size; x++) {
-	    free((ptr + x)->type);
-	    free((ptr + x)->value);
+		if (*(value + x) == '.') {
+			pointflag++;
+			if (pointflag > 1)
+				return 0;
+		}
+		else if (*(value + x) == '-') {
+			minusflag++;
+			if (minusflag > 1)
+				return 0;
+		}
+		else if (isdigit(*(value + x)) == 0) {
+			return 0;
+		}
 	}
+	if (pointflag == 0)
+		return INT_TYPE;
+	else
+		return DOUBLE_TYPE;
+}
+
+/*
+Returns 0 if the char pointer up to the limit n where n is the
+int passed trough the parameters is NOT a string. Returns 1
+if the char pointer up to the limit contains ONLY characters Aa-Zz.
+*/
+int isString(char *value, int size) {
+	for (int x = 0; x < size; x++) {
+		if (isalpha(*(value + x)) == 0)
+			return 0;
+	}
+	return 1;
+}
+
+void destroyTokenStream(struct TokenStream *ptr)
+{
+	for (int x = 0; x < ptr->size; x++) {
+		free((ptr->tokens + x)->type);
+		free((ptr->tokens + x)->value);
+	}
+	free(ptr->tokens);
 	free(ptr);
 }
 
-void printTokenStream(struct Token *sentence, int size)
+void printTokenStream(struct TokenStream *ptr)
 {
-	for (int x = 0; x < size; x++) {
-		printf("%s ---> ", (sentence + x)->type);
-		printf("%s\n", (sentence + x)->value);
+	for (int x = 0, y = 0; x < ptr->size; x++, y++) {
+		printf("%s", (ptr->tokens + x)->type);
+		printf("(%s), ", (ptr->tokens + x)->value);
+		if (y > 10) {
+			y = 0;
+			printf("\n");
+		}
 	}
 }

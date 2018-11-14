@@ -88,11 +88,11 @@ trough the parameters to the numbers of chars read. The sector size denotes
 the amount of bytes that will be read each cycle. The sector size increases by 1
 if feof was not reached in the previous cycle.
 */
-char *readAll(FILE *fl, int *size, int sector)
+char *readAll(FILE *fl, unsigned int *size, int sector)
 {
 	char *rdata = NULL;
 	int count = 1;
-	int dataread;
+	unsigned int dataread;
 
 	do {
 		fseek(fl, 0, SEEK_SET);
@@ -101,6 +101,7 @@ char *readAll(FILE *fl, int *size, int sector)
 		count++;
 	} while (feof(fl) == 0);
 	
+	*size = dataread;
 	rdata = realloc(rdata, dataread);
 	return rdata;
 }
