@@ -13,15 +13,19 @@
 print tok --> Prints the current tokens  and lexems from the tokenizer\n\
 lex --> Reads a file and lexes it, printing a stream of tokens.\n\
 print lex --> Prints the current token stream from the last file that was lexed.\n\
-exit --> Exits the shell.\n"
+exit --> Exits the shell.\n\
+You can add \"mem\" before \"tokenize\" or \"lex\" to use their memory efficient versions.\n"
 #define FILE_ERR_MSG "\nCould not open file.\n"
 #define NO_DATA_MSG "\nNothing to print...\n"
 #define NOT_RECOG_MSG "\nCommand not recognized\n"
 
 #define HELP_CMD "help"
 #define TOKEN_CMD "tokenize"
+#define M_TOKEN_CDM "memtokenize"
 #define PRNT_TOK_CMD "printtok"
+#define M_PRNT_TOK_CMD "memprinttok"
 #define LEX_CMD "lex"
+#define M_LEX_CMD "memlex"
 #define PRNT_LEX_CMD "printlex"
 #define EXIT_CMD "exit"
 
@@ -30,11 +34,13 @@ exit --> Exits the shell.\n"
 
 static char input[BUF_SIZE];
 static struct TokenStream *tokenStream = NULL;
-static struct LinkedToken *tokenizer = NULL;
+static struct LinkToken *tokenizer = NULL;
+static struct mem_LinkToken *mem_tokenizer = NULL;
 
 void getInput(void);
 void clearscr(void);
 void freeptr(void);
+char *readfile(char *filename, unsigned int *fsize, int sector);
 
 void main()
 {
@@ -46,16 +52,21 @@ void main()
 		}
 		else if (strncmp(input, TOKEN_CMD, strlen(TOKEN_CMD)) == 0) {
 			freeptr();
-			FILE *fl = fopen(input + strlen(TOKEN_CMD), "r");
-			if (fl != NULL) {
-				int size = 0;
-				char *alphabet = readAll(fl, &size, 256);
+			int size = 0;
+			char *alphabet = readfile(input + strlen(TOKEN_CMD), &size, 256);
+			if (alphabet != NULL) {
 				tokenizer = createTokenizer(alphabet);
 				free(alphabet);
-				fclose(fl);
 			}
-			else
-				printf(FILE_ERR_MSG);
+		}
+		else if (strncmp(input, M_TOKEN_CDM, strlen(M_TOKEN_CDM)) == 0) {
+			freeptr();
+			int size = 0;
+			char *alphabet = readfile(input + strlen(M_TOKEN_CDM), &size, 256);
+			if (alphabet != NULL) {
+				mem_tokenizer = mem_createTokenizer(alphabet);
+				free(alphabet);
+			}
 		}
 		else if (strncmp(input, PRNT_TOK_CMD, strlen(input)) == 0) {
 			if (tokenizer != NULL) {
@@ -65,21 +76,34 @@ void main()
 			else
 				printf(NO_DATA_MSG);
 		}
+		else if (strncmp(input, M_PRNT_TOK_CMD, strlen(input)) == 0) {
+			if (mem_tokenizer != NULL) {
+				printf("\n");
+				mem_printTokenizer(mem_tokenizer);
+				printf("\n");
+			}
+			else
+				printf(NO_DATA_MSG);
+		}
 		else if (strncmp(input, LEX_CMD, strlen(LEX_CMD)) == 0) {
 			if (tokenStream != NULL) {
 				destroyTokenStream(tokenStream);
 				tokenStream = NULL;
 			}
-			FILE *fl = fopen(input + strlen(LEX_CMD), "r");
-			if (fl != NULL) {
-				unsigned int size = 0;
-				char *lex = readAll(fl, &size, 256);
-				tokenStream = tokenizeAll(lex, size, tokenizer);
-				free(lex);
-				fclose(fl);
-				continue;
+			unsigned int size = 0;
+			char *lex = readfile(input + strlen(LEX_CMD), &size, 256);
+			tokenStream = LexInput(lex, size, tokenizer);
+			free(lex);
+		}
+		else if (strncmp(input, M_LEX_CMD, strlen(M_LEX_CMD)) == 0) {
+			if (tokenStream != NULL) {
+				destroyTokenStream(tokenStream);
+				tokenStream = NULL;
 			}
-			printf(FILE_ERR_MSG);
+			unsigned int size = 0;
+			char *lex = readfile(input + strlen(M_LEX_CMD), &size, 256);
+			tokenStream = mem_LexInput(lex, size, mem_tokenizer);
+			free(lex);
 		}
 		else if (strncmp(input, PRNT_LEX_CMD, strlen(input)) == 0) {
 			if (tokenStream != NULL) {
@@ -136,4 +160,24 @@ void freeptr() {
 		destroyTokenStream(tokenStream);
 		tokenStream = NULL;
 	}
+}
+
+char *readfile(char *filename, unsigned int *fsize, int sector) {
+	FILE *fl = fopen(filename, "r");
+	if (fl != NULL) {
+		int count = 1;
+		char *retval = NULL;
+		do {
+			fseek(fl, 0, SEEK_SET);
+			retval = realloc(retval, count * sector);
+			*fsize = fread(retval, 1, sector * count, fl);
+			count++;
+		} while (feof(fl) == 0);
+		fclose(fl);
+		retval = realloc(retval, *fsize);
+		return retval;
+	}
+	else
+		printf(FILE_ERR_MSG);
+		return NULL;
 }

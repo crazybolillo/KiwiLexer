@@ -9,10 +9,11 @@
 #define TAB '\t'
 #define NLINE '\n'
 
-#define DOUBLE_ID "DBL"
-#define INT_ID "INT"
-#define STRING_ID "STR"
-#define MIXED_STRING_ID "MIX"
+extern char *DOUBLE_ID;
+extern char *INT_ID;
+extern char *STRING_ID;
+extern char *MIX_STRING_ID;
+
 
 #define DOUBLE_TYPE 2
 #define INT_TYPE 1
@@ -27,20 +28,30 @@ struct TokenStream {
 	int size;
 };
 
-int skipUntilLimit(char *ptr, int limit);
-struct Token createToken(char *type, char *value, int valsize);
-struct Token createTypeToken(char *type);
-struct Token tokenizeWord(char *word, int size, 
-	struct LinkedToken *tokenizer);
-struct TokenStream *tokenizeAll(char *sentence, int sensize,
-	struct LinkedToken *tokenizer);
-
+/*
+Memory independent functions. 
+*/
 int isNumber(char *val, int size);
 int isString(char *val, int size);
-	
-	
+
+int skipUntilLimit(char *ptr, int limit);
+struct Token newUnknownToken(char *value, int valsize);
+struct Token newToken(char *type, char *value);
+struct Token newValToken(char *type, char *value, int valsize);
+struct Token newTypeToken(char *type);
 void destroyTokenStream(struct TokenStream *token);
 void printTokenStream(struct TokenStream *token);
+
+/*More memory consuming functions where the tokenizer can have lexemes.*/
+struct Token lexWord(char *word, int size,  struct LinkToken *tokenizer);
+struct TokenStream *LexInput(char *sentence, int sensize, 
+	struct LinkToken *tokenizer);
+
+/*Less memory consuming functions where the tokenizer does not have lexemes.*/
+struct Token mem_lexWord(char *word, int size, 
+	struct mem_LinkToken *tokenizer);
+struct TokenStream *mem_LexInput(char *sentence, int sensize, 
+	struct mem_LinkToken *tokenizer);
 
 
 #endif

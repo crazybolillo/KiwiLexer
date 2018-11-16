@@ -6,41 +6,64 @@
 #include <string.h>
 
 /*
-Header destined to manage the data structure the tokenizer depends on. LinkedLists.
-Tokens consist of a "LinkedToken" with its ID, the next Token in the list and 
-a "LinkedLexeme" which consists of the words or symbols which form part of that token. 
-
-A "LinkedLexeme" consists of just a char pointer terminated with a NUL character, basically
-a string and a pointer to the next LinkedChild in the list. 
+This header manages the LinkedLists that create the Tokenizer
+the lexer depends on. It also contains the very simple methods
+used to parse the alphabet into a LinkedList data structure. And yes,
+I do know typedefs exist. 
 */
 
 #define TOKEN_LIMIT '~'
 #define TOKEN_SEPARATOR ','
 #define TOKEN_END '`'
 
-struct LinkedLexeme {
+/*
+Data structure for alphabets where Tokens can have
+several lexemes. Each Token has its own LinkedList
+of lexemes.
+*/
+struct LinkLex {
 	char *value;
-	struct LinkedLexeme *next;
+	struct LinkLex *next;
 };
 
-struct LinkedToken {
+struct LinkToken {
 	char *id;
-	struct LinkedLexeme *sons;
-	struct LinkedToken *next;
+	struct LinkLex *sons;
+	struct LinkToken *next;
 };
 
-struct LinkedToken *createLinkedToken(char *id, int idsize);
-struct LinkedLexeme *createLexeme(char *value);
+/*
+Memory efficient data model used for alphabets where
+Tokens are their own Lexems. This is the case  for alphabets 
+like the C language where keywords are their own tokens. All 
+methods that manage these memory efficient data models have "mem"
+as a prefix. This struct saves 8-4 bytes per node depending on the
+pointer size the platform uses.
+*/
+struct mem_LinkToken {
+	char *id;
+	struct mem_LinkToken *next;
+};
 
-int insertToken(struct LinkedToken *branch, struct LinkedToken *root);
-int insertTokenValue(char *word, int wordsize, struct LinkedToken *branch);
-
-char *readAll(FILE *fl, unsigned int *size, int sector);
+char *readAll(FILE *fl, unsigned int *sizeread, int sector);
 int skipchar(char *ptr, char until);
-struct LinkedToken *parseToken(char **grammar);
-struct LinkedToken *createTokenizer(char *grammar);
-void destroyTokenizer(struct LinkedToken *head);
 
-void printTokenizer(struct LinkedToken *tokenizer);
+//General functions. 
+struct LinkToken *newLinkToken(char *id, int idsize);
+void insertToken(struct LinkToken *branch, struct LinkToken **root);
+void insertLexeme(char *word, int wordsize, struct LinkToken *branch);
+struct LinkToken *parseToken(char **grammar);
+struct LinkToken *createTokenizer(char *grammar);
+void destroyTokenizer(struct LinkToken *head);
+void printTokenizer(struct LinkToken *tokenizer);
+
+//More memory efficient versions of previous functions.
+struct mem_LinkToken *mem_newLinkToken(char *id, int idsize);
+void mem_insertToken(struct mem_LinkToken *brnach, 
+	struct mem_LinkToken **root);
+struct mem_LinkToken *mem_parseToken(char **grammar);
+struct mem_LinkToken *mem_createTokenizer(char *grammar);
+void mem_printTokenizer(struct mem_LinkToken *tokenizer);
+void mem_destroyTokenizer(struct mem_LinkToken *head);
 
 #endif
