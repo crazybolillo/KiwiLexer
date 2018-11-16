@@ -15,6 +15,10 @@ int skipUntilLimit(char *ptr, int limit) {
 	return x;
 }
 
+/*
+Creates a Token and assigns it a type and value. It makes sure it's type
+and value are NUL terminated.
+*/
 struct Token createToken(char *type, char *value, int valsize)
 {
 	char *ntype = calloc(strlen(type) + 1, sizeof(char));
@@ -30,6 +34,20 @@ struct Token createToken(char *type, char *value, int valsize)
 }
 
 /*
+Creates a Token where its type or token ID is the same as its value. Used in cases
+like '+' where the Token can be its own lexeme. 
+*/
+struct Token createTypeToken(char *type) {
+	char *ntype = calloc(strlen(type) + 1, sizeof(char));
+	memcpy(ntype, type, strlen(type));
+
+	struct Token retval;
+	retval.type = ntype;
+	retval.value = ntype;
+	return retval;
+}
+
+/*
 Compares the char pointer passed trough the parameters with all the
 known tokens and returns the token category type if a match is found. 
 Otherwise it returns a VALUE type.
@@ -37,8 +55,14 @@ Otherwise it returns a VALUE type.
 struct Token tokenizeWord(char *word, int size, struct LinkedToken *tokenizer)
 {
 	struct LinkedToken *tmphead = tokenizer;
+	struct LinkedLexeme *tmpsons;
 	while (tokenizer != NULL) {
-		struct LinkedLexeme *tmpsons = tokenizer->sons;
+		tmpsons = tokenizer->sons;
+		if (strncmp(word, tokenizer->id, strlen(tokenizer->id)) == 0) {
+			struct Token retval = createTypeToken(tokenizer->id);
+			tokenizer = tmphead;
+			return retval;
+		}
 		while (tokenizer->sons != NULL) {
 			if (strncmp(tokenizer->sons->value, word, size) == 0 && 
 					strlen(tokenizer->sons->value) == size) {
@@ -150,14 +174,33 @@ int isString(char *value, int size) {
 	return 1;
 }
 
+/*
+Everything destroyToken does but on a loop and on an array of Tokens.
+*/
 void destroyTokenStream(struct TokenStream *ptr)
 {
 	for (int x = 0; x < ptr->size; x++) {
 		free((ptr->tokens + x)->type);
+		(ptr->tokens + x)->type = NULL;
 		free((ptr->tokens + x)->value);
 	}
 	free(ptr->tokens);
 	free(ptr);
+}
+
+/*
+Frees all the memory allocated to a Token which consists
+of a char pointer with it's ID and value. It's type is set to
+null upon freeing as the value can be the same as it's ID. If
+that is the case then the value just points to wherever the ID
+points and setting the type to NULL after freeing stops a double
+free on the same pointer from happening.
+*/
+void destroyToken(struct Token *ptr)
+{
+	free(ptr->type);
+	ptr->type = NULL;
+	free(ptr->value);
 }
 
 void printTokenStream(struct TokenStream *ptr)

@@ -1,19 +1,6 @@
 #include "Tokenizer.h"
 
 /*
-Creates a Lexeme and sets its value to be the same
-as the char *ptr passed trough the parameters. The
-char pointer must be nul terminated.
-*/
-struct LinkedLexeme *createLexeme(char *value)
-{
-	struct LinkedLexeme *retval = malloc(sizeof(struct LinkedLexeme));
-	retval->value = value;
-	retval->next = NULL;
-	return retval;
-}
-
-/*
 Creates an empty LinkedParent list with an identifier. Branches represent
 tokens so the identifier will indicate which type of tokens
 this branch contains. This method copies the id passed trough
@@ -54,19 +41,22 @@ int insertToken(struct LinkedToken *branch, struct LinkedToken *head)
 }
 
 /*
-Adds a new word to the branch.
+Adds a new word (LinkedLexeme) to the branch (LinkedToken). 
 */
 int insertTokenValue(char *word, int wordsize, struct LinkedToken *branch)
 {
-	char *allocword = malloc(sizeof(char) * (wordsize + 1));
-	memset(allocword, 0x00, wordsize + 1);
+	char *allocword = calloc(sizeof(char), wordsize + 1);;
 	memcpy(allocword, word, wordsize);
 
+	struct LinkedLexeme *nlexeme = malloc(sizeof(struct LinkedLexeme));
+	nlexeme->value = allocword;
+	nlexeme->next = NULL;
+
 	if (branch->sons == NULL) {
-		branch->sons = createLexeme(allocword);
+		branch->sons = nlexeme;
 	}
 	else if (branch->sons->next == NULL) {
-		branch->sons->next = createLexeme(allocword);
+		branch->sons->next = nlexeme;
 	}
 	else {
 		struct LinkedLexeme *temp = malloc(sizeof(struct LinkedLexeme));
@@ -74,7 +64,7 @@ int insertTokenValue(char *word, int wordsize, struct LinkedToken *branch)
 		temp->next = branch->sons->next;
 		free(branch->sons);
 
-		struct LinkedLexeme *head = createLexeme(allocword);
+		struct LinkedLexeme *head = nlexeme;
 		head->next = temp;
 		branch->sons = head;
 	}
@@ -92,17 +82,15 @@ char *readAll(FILE *fl, unsigned int *size, int sector)
 {
 	char *rdata = NULL;
 	int count = 1;
-	unsigned int dataread;
 
 	do {
 		fseek(fl, 0, SEEK_SET);
 		rdata = realloc(rdata, sizeof(char) * (sector * count));
-		dataread = fread(rdata, 1, (sector * count), fl);
+		*size = fread(rdata, 1, (sector * count), fl);
 		count++;
 	} while (feof(fl) == 0);
 	
-	*size = dataread;
-	rdata = realloc(rdata, dataread);
+	rdata = realloc(rdata, *size);
 	return rdata;
 }
 
@@ -142,7 +130,9 @@ struct LinkedToken *parseToken(char **grammar)
 		    continue;
 		}
 	}	
-	insertTokenValue(*grammar - len, len, retroot);
+	if (len > 0) {
+		insertTokenValue(*grammar - len, len, retroot);
+	}
 	(*grammar)++;
 	return retroot;
 
@@ -199,7 +189,7 @@ void printTokenizer(struct LinkedToken *holder)
 	struct LinkedToken *head = holder;
 	struct LinkedLexeme *childhead;
 	while (holder != NULL) {
-		printf("TOKENS: %s\n", holder->id);
+		printf("TOKEN: %s\n", holder->id);
 		childhead = holder->sons;
 		while (holder->sons != NULL) {
 			printf("%s\n", holder->sons->value);
