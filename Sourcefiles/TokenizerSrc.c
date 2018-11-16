@@ -116,12 +116,21 @@ into a LinkedList structure.
 */
 struct LinkedToken *parseToken(char **grammar) 
 {
-	int idlen = skipchar(*grammar, TOKEN_SEPARATOR);
-	struct LinkedToken *retroot = createLinkedToken(*grammar, idlen);
-	idlen++; //Skip comma.
-	*grammar += idlen;
+	int len = 0;
+	struct LinkedToken *retroot;
+	for(; (*(*grammar + len) != TOKEN_SEPARATOR) && (*(*grammar + len) != TOKEN_LIMIT); len++);
+	if(*(*grammar + len) == TOKEN_LIMIT){
+	    retroot = createLinkedToken(*grammar, len);
+	    len++;
+        *grammar += len;
+        return retroot;
+	}
+	
+	retroot = createLinkedToken(*grammar, len);
+	len++; //Skip comma.
+	*grammar += len;
     
-    int len = 0;
+    len = 0;
 	for (; **grammar != TOKEN_LIMIT; (*grammar)++, len++) {
 		if (**grammar == TOKEN_SEPARATOR) {
 			insertTokenValue(*grammar - len, len, retroot);
