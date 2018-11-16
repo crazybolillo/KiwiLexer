@@ -1,5 +1,13 @@
+<<<<<<< HEAD
 ~/,/~
 ~+,+~
 ~-,-~
 ~*,*~
+=======
+~DIVISION,/~
+~SUM,+~
+~RESTA,-~
+~MULTIPLICATION,*~
+~POWER,^~
+>>>>>>> 8d36f37412be4f1f17f1f8007499d8a6c453e05e
 `

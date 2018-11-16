@@ -9,7 +9,7 @@ int skipUntilLimit(char *ptr, int limit) {
 	int x = 0; 
 	for (x; x < limit; x++) {
 		if ((*(ptr + x) == SPACE) || (*(ptr + x) == COMMA) ||
-			(*(ptr + x) == TAB))
+			(*(ptr + x) == TAB) || (*(ptr + x) == NLINE))
 			return x;
 	}
 	return x;

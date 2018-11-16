@@ -29,6 +29,7 @@ struct TokenStream {
 
 int skipUntilLimit(char *ptr, int limit);
 struct Token createToken(char *type, char *value, int valsize);
+struct Token createTypeToken(char *type);
 struct Token tokenizeWord(char *word, int size, 
 	struct LinkedToken *tokenizer);
 struct TokenStream *tokenizeAll(char *sentence, int sensize,
