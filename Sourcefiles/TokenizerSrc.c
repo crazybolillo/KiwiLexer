@@ -148,15 +148,21 @@ void printTokenizer(struct LinkToken *holder)
 {
 	struct LinkToken *head = holder;
 	struct LinkLex *childhead;
+	char nlineflag = 0;
 	while (holder != NULL) {
 		printf("TOKEN: %s\n", holder->id);
 		childhead = holder->sons;
 		while (holder->sons != NULL) {
-			printf("%s\n", holder->sons->value);
+			if (nlineflag >= 6) {
+				nlineflag = 0;
+				printf("\n");
+			}
+			printf("<\"%s\"> ", holder->sons->value);
 			holder->sons = holder->sons->next;
+			nlineflag++;
 		}
 		holder->sons = childhead;
-		printf("----------\n");
+		printf("\n----------\n");
 		holder = holder->next;
 	}
 	holder = head;
@@ -221,12 +227,13 @@ void mem_printTokenizer(struct mem_LinkToken *head)
 	struct mem_LinkToken *tmphead = head;
 	char prntcount = 0;
 	while (head != NULL) {
-		printf(" <TOKEN: %s > ", head->id);
-		head = head->next;
-		if (prntcount > 8) {
+		if (prntcount >= 6) {
 			prntcount = 0;
 			printf("\n");
 		}
+		printf("<TOKEN: \"%s\"> ", head->id);
+		head = head->next;
+		prntcount++;
 	}
 	head = tmphead;
 }

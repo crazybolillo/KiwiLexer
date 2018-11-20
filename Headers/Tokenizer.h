@@ -12,7 +12,7 @@ used to parse the alphabet into a LinkedList data structure. And yes,
 I do know typedefs exist. 
 */
 
-#define TOKEN_LIMIT '~'
+#define TOKEN_LIMIT '"'
 #define TOKEN_SEPARATOR ','
 #define TOKEN_END '`'
 

@@ -12,7 +12,7 @@
 #define HELP_MSG "\ntokenize --> Reads an alphabet from the text file and loads it into memory.\n\
 print tok --> Prints the current tokens  and lexems from the tokenizer\n\
 lex --> Reads a file and lexes it, printing a stream of tokens.\n\
-print lex --> Prints the current token stream from the last file that was lexed.\n\
+print lex --> Prints the current token stream from the last file that was lexed. Has modes 1, 2 and 3.\n\
 exit --> Exits the shell.\n\
 You can add \"mem\" before \"tokenize\" or \"lex\" to use their memory efficient versions.\n"
 #define FILE_ERR_MSG "\nCould not open file.\n"
@@ -92,7 +92,7 @@ void main()
 			}
 			unsigned int size = 0;
 			char *lex = readfile(input + strlen(LEX_CMD), &size, 256);
-			tokenStream = LexInput(lex, size, tokenizer);
+			tokenStream = lexInput(lex, size, tokenizer);
 			free(lex);
 		}
 		else if (strncmp(input, M_LEX_CMD, strlen(M_LEX_CMD)) == 0) {
@@ -102,13 +102,13 @@ void main()
 			}
 			unsigned int size = 0;
 			char *lex = readfile(input + strlen(M_LEX_CMD), &size, 256);
-			tokenStream = mem_LexInput(lex, size, mem_tokenizer);
+			tokenStream = mem_lexInput(lex, size, mem_tokenizer);
 			free(lex);
 		}
-		else if (strncmp(input, PRNT_LEX_CMD, strlen(input)) == 0) {
+		else if (strncmp(input, PRNT_LEX_CMD, strlen(PRNT_LEX_CMD)) == 0) {
 			if (tokenStream != NULL) {
 				printf("\n");
-				printTokenStream(tokenStream);
+				printTokenStream(tokenStream, *(input + strlen(PRNT_LEX_CMD)));
 				printf("\n");
 			}
 			else
