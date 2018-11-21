@@ -45,7 +45,7 @@ int isNumber(char *value, int size)
 
 /*
 Checks whether a stream of characters of n size is a
-string or not. Valid strings may only contain letters. 
+string or not. Valid strings may only contain letters and underscores. 
 Aa - Zz. Returns one if the char stream is a valid string
 otherwise it returns cero.
 */
@@ -55,7 +55,7 @@ int isString(char *value, int size)
 		return 0;
 
 	for (int x = 0; x < size; x++) {
-		if (isalpha(*(value + x)) == 0)
+		if ((isalpha(*(value + x)) == 0) && (*(value + x) != '_'))
 			return 0;
 	}
 	return 1;
@@ -72,6 +72,11 @@ int isLiteral(char *value, int size)
 
 	if ((*value != '"') || (*(value + size - 1) != '"'))
 		return 0;
+		
+	for(int x = 1; x < size - 1; x++){
+	    if((*(value + x) == '\"') && (*(value + x - 1) != '\\'))
+	        return 0;
+	}
 
 	return 1;
 }

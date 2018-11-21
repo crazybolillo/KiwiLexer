@@ -10,11 +10,10 @@
 
 #define INIT_MSG "KiwiLexer Testing Shell. \"help\" will show available commands.\n"
 #define HELP_MSG "\ntokenize --> Reads an alphabet from the text file and loads it into memory.\n\
-print tok --> Prints the current tokens  and lexems from the tokenizer\n\
+print tok --> Prints the current alphabet.\n\
 lex --> Reads a file and lexes it, printing a stream of tokens.\n\
 print lex --> Prints the current token stream from the last file that was lexed. Has modes 1, 2 and 3.\n\
-exit --> Exits the shell.\n\
-You can add \"mem\" before \"tokenize\" or \"lex\" to use their memory efficient versions.\n"
+exit --> Exits the shell.\n"
 #define FILE_ERR_MSG "\nCould not open file.\n"
 #define NO_DATA_MSG "\nNothing to print...\n"
 #define NOT_RECOG_MSG "\nCommand not recognized\n"
