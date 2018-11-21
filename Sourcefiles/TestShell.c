@@ -21,11 +21,8 @@ You can add \"mem\" before \"tokenize\" or \"lex\" to use their memory efficient
 
 #define HELP_CMD "help"
 #define TOKEN_CMD "tokenize"
-#define M_TOKEN_CDM "memtokenize"
 #define PRNT_TOK_CMD "printtok"
-#define M_PRNT_TOK_CMD "memprinttok"
 #define LEX_CMD "lex"
-#define M_LEX_CMD "memlex"
 #define PRNT_LEX_CMD "printlex"
 #define EXIT_CMD "exit"
 
@@ -34,7 +31,6 @@ You can add \"mem\" before \"tokenize\" or \"lex\" to use their memory efficient
 
 static char input[BUF_SIZE];
 static struct TokenStream *tokenStream = NULL;
-static struct LinkToken *tokenizer = NULL;
 static struct mem_LinkToken *mem_tokenizer = NULL;
 
 void getInput(void);
@@ -55,28 +51,11 @@ void main()
 			int size = 0;
 			char *alphabet = readfile(input + strlen(TOKEN_CMD), &size, 256);
 			if (alphabet != NULL) {
-				tokenizer = createTokenizer(alphabet);
-				free(alphabet);
-			}
-		}
-		else if (strncmp(input, M_TOKEN_CDM, strlen(M_TOKEN_CDM)) == 0) {
-			freeptr();
-			int size = 0;
-			char *alphabet = readfile(input + strlen(M_TOKEN_CDM), &size, 256);
-			if (alphabet != NULL) {
-				mem_tokenizer = mem_createTokenizer(alphabet);
+				mem_tokenizer = mem_createTokenizer(alphabet, size);
 				free(alphabet);
 			}
 		}
 		else if (strncmp(input, PRNT_TOK_CMD, strlen(input)) == 0) {
-			if (tokenizer != NULL) {
-				printf("\n");
-				printTokenizer(tokenizer);
-			}
-			else
-				printf(NO_DATA_MSG);
-		}
-		else if (strncmp(input, M_PRNT_TOK_CMD, strlen(input)) == 0) {
 			if (mem_tokenizer != NULL) {
 				printf("\n");
 				mem_printTokenizer(mem_tokenizer);
@@ -92,16 +71,6 @@ void main()
 			}
 			unsigned int size = 0;
 			char *lex = readfile(input + strlen(LEX_CMD), &size, 256);
-			tokenStream = lexInput(lex, size, tokenizer);
-			free(lex);
-		}
-		else if (strncmp(input, M_LEX_CMD, strlen(M_LEX_CMD)) == 0) {
-			if (tokenStream != NULL) {
-				destroyTokenStream(tokenStream);
-				tokenStream = NULL;
-			}
-			unsigned int size = 0;
-			char *lex = readfile(input + strlen(M_LEX_CMD), &size, 256);
 			tokenStream = mem_lexInput(lex, size, mem_tokenizer);
 			free(lex);
 		}
@@ -152,13 +121,12 @@ void clearscr()
 }
 
 void freeptr() {
-	if (tokenizer != NULL) {
-		destroyTokenizer(tokenizer);
-		tokenizer = NULL;
-	}
 	if (tokenStream != NULL) {
 		destroyTokenStream(tokenStream);
 		tokenStream = NULL;
+	}
+	if (mem_tokenizer != NULL) {
+		mem_destroyTokenizer(mem_tokenizer);
 	}
 }
 

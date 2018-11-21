@@ -6,24 +6,6 @@ char *STRING_ID = "STR";
 char *LIT_STRING_ID = "LIT_STR";
 char *NO_MATCH_ERR = "NME";
 
-/*
-lexInput and mem_lexInput are the core of the lexer for their respective
-tokenizer model. They work in exactly the same way with the only difference
-being the tokenizer. The function looks for the biggest match left to
-right inside the string. It does this by trying to match the whole
-string and decreasing its size by one each time it does not find a
-match. Decreasing the size each time by one ensures that whenever a match
-is found it will be the biggest one possible. Once a match is found it is
-"consumed" and the starting index of the string is moved to the right 'n'
-spaces where 'n' is the size of the match found (if "Hi" is found the
-starting index will be moved two spaces to the right). If  no match is
-found after iterating trough the whole string then the string's starting
-index is moved one space to the right and the character to the left is
-discarded and the process begins all over again until the starting index
-is the same as the string's size. This lexer will only match the strings
-found inside the tokenizer and the built in datatypes like int, double,
-string and string literal.
-*/
 
 /*
 Checks whether a stream of characters of n size is 
@@ -172,12 +154,10 @@ parameters.
 */
 struct Token newValToken(char *type, char *value, int valsize)
 {
-	char *nval = calloc(valsize + 1, sizeof(char));
-	memcpy(nval, value, valsize);
-
 	struct Token retval;
 	retval.type = type;
-	retval.value = nval;
+	retval.value = calloc(valsize + 1, sizeof(char));
+	memcpy(retval.value, value, valsize);
 	return retval;
 }
 
@@ -265,93 +245,13 @@ void printTokenStream(struct TokenStream *ptr, char format)
 		}
 	}
 }
- 
-/*------------------------------------------
-Normal memory usage functions where tokens
-can have lexemes.
----------------------------------------------*/
-/*
-Tries to match a char stream of nsize ONLY with the token ID and its
-lexemes. Returns a token with NO_MATCH_ERR ID if no match is found.
-*/
-struct Token tokenOnlyMatch(char *word, int wrdsize, 
-	struct LinkToken *tok) 
-{
-	struct LinkToken *tmphead = tok;
-	struct LinkLex *tmpchild;
-	while (tok != NULL) {
-		if ((strncmp(word, tok->id, wrdsize) == 0) &&
-			(strlen(tok->id) == wrdsize)) {
-			return newTypeToken(tok->id);
-		}
-		tmpchild = tok->sons;
-		while (tok->sons != NULL) {
-			if ((strncmp(word, tok->sons->value, wrdsize) == 0) &&
-				(strlen(tok->sons->value) == wrdsize)) {
-				return newToken(tok->id, tok->sons->value);
-			}
-			tok->sons = tok->sons->next;
-		}
-		tok->sons = tmpchild;
-		tok = tok->next;
-	}
-	tok = tmphead;
-	return newTypeToken(NO_MATCH_ERR);
-}
 
-/*See the huge comment at the top.*/
-struct TokenStream *lexInput(char *word, int wrdsize,
-	struct LinkToken *tok)
-{
-	struct TokenStream *stream = malloc(sizeof(struct TokenStream));
-	stream->size = 0;
-	stream->tokens = NULL;
-	int nstart = 0;
-	int nsize = wrdsize;
-
-	struct Token token;
-	while (nstart < wrdsize) {
-		if (nsize == 0) {
-			word++;
-			nstart++;
-			nsize = wrdsize - nstart;
-		}
-		token = tokenOnlyMatch(word, nsize, tok);
-		if (strcmp(token.type, NO_MATCH_ERR) != 0) {
-			stream->size++;
-			stream->tokens = realloc(stream->tokens,
-				sizeof(struct TokenStream) * stream->size);
-			*(stream->tokens + stream->size - 1) = token;
-			word += nsize;
-			nstart += nsize;
-			nsize = wrdsize - nstart;
-		}
-		else {
-			token = builtInMatch(word, nsize);
-			if (strcmp(token.type, NO_MATCH_ERR) != 0) {
-				stream->size++;
-				stream->tokens = realloc(stream->tokens,
-					sizeof(struct TokenStream) * stream->size);
-				*(stream->tokens + stream->size - 1) = token;
-				word += nsize;
-				nstart += nsize;
-				nsize = wrdsize - nstart;
-			}
-			else
-				nsize--;
-		}
-	}
-	return stream;
-}
-
-/*---------------------------------------
-Less memory consuming functions. (mem_)
----------------------------------------*/
 /*
 Tries to match a char stream of n size ONLY with the tokens found inside
 the tokenizer.
 */
-struct Token mem_tokenOnlyMatch(char *word, int wrdsize, struct mem_LinkToken *tok)
+struct Token mem_tokenOnlyMatch(char *word, int wrdsize, 
+	struct mem_LinkToken *tok)
 {
 	struct mem_LinkToken *tmphead = tok;
 	while (tok != NULL) {
@@ -365,7 +265,25 @@ struct Token mem_tokenOnlyMatch(char *word, int wrdsize, struct mem_LinkToken *t
 	return newTypeToken(NO_MATCH_ERR);
 }
 
-/*See the huge comment at the top of this header.*/
+/*
+mem_lexInput are the core of the lexer for their respective tokenizer
+model. They work in exactly the same way with the only difference
+being the tokenizer. The function looks for the biggest match left to
+right inside the string. It does this by trying to match the whole
+string and decreasing its size by one each time it does not find a
+match. Decreasing the size each time by one ensures that whenever a match
+is found it will be the biggest one possible. Once a match is found it is
+"consumed" and the starting index of the string is moved to the right 'n'
+spaces where 'n' is the size of the match found (if "Hi" is found the
+starting index will be moved two spaces to the right). If  no match is
+found after iterating trough the whole string then the string's starting
+index is moved one space to the right and the character to the left is
+discarded and the process begins all over again until the starting index
+is the same as the string's size. This lexer will only match the strings
+found inside the tokenizer and the built in datatypes like int, double,
+string and string literal.
+*/
+
 struct TokenStream *mem_lexInput(char *word, int wrdsize,  
 	struct mem_LinkToken *tok)
 {

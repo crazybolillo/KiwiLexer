@@ -15,168 +15,21 @@ char *readAll(FILE *fl, unsigned int *sizeread, int sector)
 	return rdata;
 }
 
-int skipchar(char *ptr, char until)
+int skipchar(char *ptr, char until, int limit)
 {
-	for (int x = 0;; ptr++, x++) {
+	int x = 0;
+	for (; x < limit; ptr++, x++) {
 		if (*ptr == until)
 			return x;
 	}
+	return x;
 }
 
-struct LinkToken *newLinkToken(char *id, int idsize)
-{
-	struct LinkToken *retval = malloc(sizeof(struct LinkToken));
-	retval->next = NULL;
-	retval->sons = NULL;
-	retval->id = calloc(sizeof(char), idsize + 1);
-	memcpy(retval->id, id, idsize);
-	return retval;
-}
-
-void insertToken(struct LinkToken *branch, struct LinkToken **head)
-{
-	if (*head == NULL) {
-		*head = branch;
-	}
-	else if ((*head)->next == NULL) {
-		(*head)->next = branch;
-	}
-	else {
-		struct LinkToken *temp = malloc(sizeof(struct LinkToken));
-		temp->id = (*head)->next->id;
-		temp->next = (*head)->next->next;
-		temp->sons = (*head)->next->sons;
-		free((*head)->next);
-
-		branch->next = temp;
-		(*head)->next = branch;
-	}
-}
-
-
-void insertLexeme(char *word, int wordsize, struct LinkToken *branch)
-{
-	char *allocword = calloc(sizeof(char), wordsize + 1);;
-	memcpy(allocword, word, wordsize);
-
-	struct LinkLex *nlexeme = malloc(sizeof(struct LinkLex));
-	nlexeme->value = allocword;
-	nlexeme->next = NULL;
-
-	if (branch->sons == NULL) {
-		branch->sons = nlexeme;
-	}
-	else if (branch->sons->next == NULL) {
-		branch->sons->next = nlexeme;
-	}
-	else {
-		struct LinkLex *temp = malloc(sizeof(struct LinkLex));
-		temp->value = branch->sons->value;
-		temp->next = branch->sons->next;
-		free(branch->sons);
-
-		struct LinkLex *head = nlexeme;
-		head->next = temp;
-		branch->sons = head;
-	}
-}
-
-struct LinkToken *parseToken(char **grammar) 
-{
-	int len = 0;
-	struct LinkToken *retroot;
-	for(; (*(*grammar + len) != TOKEN_SEPARATOR) && (*(*grammar + len) != TOKEN_LIMIT); len++);
-	if(*(*grammar + len) == TOKEN_LIMIT){
-	    retroot = newLinkToken(*grammar, len);
-	    len++;
-        *grammar += len;
-        return retroot;
-	}
-	
-	retroot = newLinkToken(*grammar, len);
-	len++; //Skip comma.
-	*grammar += len;
-    
-    len = 0;
-	for (; **grammar != TOKEN_LIMIT; (*grammar)++, len++) {
-		if (**grammar == TOKEN_SEPARATOR) {
-			insertLexeme(*grammar - len, len, retroot);
-			(*grammar)++;
-			len = 0;
-		    continue;
-		}
-	}	
-	if (len > 0) {
-		insertLexeme(*grammar - len, len, retroot);
-	}
-	(*grammar)++;
-	return retroot;
-
-}
-
-struct LinkToken *createTokenizer(char *grammar)
-{
-	struct LinkToken *retroot = NULL;
-	for(; *grammar != TOKEN_END; grammar++){
-		if (*grammar == TOKEN_LIMIT) {
-			grammar++;
-			insertToken(parseToken(&grammar), &retroot);
-		}
-	}
-	return retroot;
-}
-
-void destroyTokenizer(struct LinkToken *head)
-{
-	struct LinkToken *nextHead;
-	struct LinkLex *nextSon;
-	while (head != NULL) {
-		while (head->sons != NULL) {
-			nextSon = head->sons->next;
-            free(head->sons->value);
-			free(head->sons);
-			head->sons = nextSon;
-		}
-		nextHead = head->next;
-		free(head->id);
-        free(head);
-		head = nextHead;
-	}
-}
-
-void printTokenizer(struct LinkToken *holder) 
-{
-	struct LinkToken *head = holder;
-	struct LinkLex *childhead;
-	char nlineflag = 0;
-	while (holder != NULL) {
-		printf("TOKEN: %s\n", holder->id);
-		childhead = holder->sons;
-		while (holder->sons != NULL) {
-			if (nlineflag >= 6) {
-				nlineflag = 0;
-				printf("\n");
-			}
-			printf("<\"%s\"> ", holder->sons->value);
-			holder->sons = holder->sons->next;
-			nlineflag++;
-		}
-		holder->sons = childhead;
-		printf("\n----------\n");
-		holder = holder->next;
-	}
-	holder = head;
-}
-
-/*----------------------------------------
-_mem (More memory efficient) functions defined.
------------------------------------------*/
 struct mem_LinkToken *mem_newLinkToken(char *id, int idsize)
 {
-	char *nid = calloc(sizeof(char), idsize + 1);
-	memcpy(nid, id, idsize);
 	struct mem_LinkToken *retval = malloc(sizeof(struct mem_LinkToken));
-	retval->id = nid;
+	retval->id = calloc(idsize + 1, sizeof(char));
+	memcpy(retval->id, id, idsize);
 	retval->next = NULL;
 	return retval;
 }
@@ -191,32 +44,28 @@ void mem_insertToken(struct mem_LinkToken *branch,
 		(*head)->next = branch;
 	}
 	else {
-		struct mem_LinkToken *tmp = malloc(sizeof(struct mem_LinkToken));
-		tmp->id = (*head)->next->id;
-		tmp->next = (*head)->next->next;
-		free((*head)->next);
+		struct mem_LinkToken *tmp = (*head)->next;
 
 		branch->next = tmp;
 		(*head)->next = branch;
 	}
 }
 
-struct mem_LinkToken *mem_parseToken(char **grammar) 
-{
-	int len = skipchar(*grammar, TOKEN_LIMIT);
-	struct mem_LinkToken *retval = mem_newLinkToken(*grammar, len);
-	len++;
-	*grammar += len;
-	return retval;
-}
 
-struct mem_LinkToken *mem_createTokenizer(char *grammar)
+struct mem_LinkToken *mem_createTokenizer(char *grammar, int gramsize)
 {
 	struct mem_LinkToken *retval = NULL;
-	for (; *grammar != TOKEN_END; grammar++) {
+	int x = 0; 
+	for (; x < gramsize; grammar++, x++) {
 		if (*grammar == TOKEN_LIMIT) {
 			grammar++;
-			mem_insertToken(mem_parseToken(&grammar), &retval);
+			x++;
+			int len = skipchar(grammar, TOKEN_LIMIT, gramsize - x);
+			struct mem_LinkToken *tok = mem_newLinkToken(grammar, len);
+			len++; 
+			x += len;
+			grammar += len;
+			mem_insertToken(tok, &retval);
 		}
 	}
 	return retval;

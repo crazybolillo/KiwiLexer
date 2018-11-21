@@ -40,11 +40,6 @@ void destroyToken(struct Token *token);
 void destroyTokenStream(struct TokenStream *token);
 void printTokenStream(struct TokenStream *token, char format);
 
-/*More memory consuming functions where the tokenizer can have lexemes.*/
-struct Token tokenOnlyMatch(char *stream, int strsize, struct LinkToken *tok);
-struct TokenStream *lexInput(char *sentence, int sensize, 
-	struct LinkToken *tokenizer);
-
 /*Less memory consuming functions where the tokenizer does not have lexemes.*/
 struct Token mem_tokenOnlyMatch(char *stream, int strsize, struct mem_LinkToken *tokenizer);
 struct TokenStream *mem_lexInput(char *word, int wrdsize,
