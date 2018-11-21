@@ -188,7 +188,7 @@ void destroyToken(struct Token *ptr)
 	if ((strcmp(ptr->type, DOUBLE_ID) == 0) ||
 		(strcmp(ptr->type, INT_ID) == 0) ||
 		(strcmp(ptr->type, STRING_ID) == 0) ||
-		(strcmp(ptr->type, NO_MATCH_ERR) == 0)) {
+		(strcmp(ptr->type, LIT_STRING_ID) == 0)) {
 		free(ptr->value);
 	}
 }
