@@ -10,9 +10,21 @@ The Lexer is able to lex C code source files correctly. A text file with the C a
 
 The source code is also minimal and easy to modify. The whole lexer file is probably around 200 lines without comments. There is no obfuscation at all and all files follow a naming convention that makes it very easy to find the .c file that implements the headers. This means you can just open a file and understand it without having to find typedefs or other definitions deep down a 1000 file repository.
 
+## Using the test shell:
+To compile it on Linux just use:
+```
+gcc -o KiwiShell TokenizerSrc.c LexerSrc.c TestShell.c -I pathToThisFolder/Headers
+```
+To compile it on Windows:
+```
+You gotta use nmake which I do not know how to use. Sorry
+```
+
 ## Limitations
 The main limitation is it does not support regular expressions. Other programs like Flex support them and use them to declare what are considered valid identifiers or digits. This lexer avoids that by providing built in datatypes. The built in datatypes are the following:
 
 * Strings. Anything that consists of just characters will be matched as a string. This means that Strings are valid identifiers. 
 * String literals. Anything between two '"' will be matched as a string literal. 
 * Numbers. Negative or with decimal point, if it finds a stream of numbers it will match them as their type, whether they are integers or real numbers.
+
+On a bright side this built in datatypes mean that if you dont really need to write or load an alphabet into memory if you are just looking to lex the built in datatypes.
