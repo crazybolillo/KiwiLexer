@@ -64,21 +64,18 @@ int isString(char *value, int size)
 
 /*
 Checks whether a char stream with n size is a string literal or not. 
-String literals are considered as everything between two '"'.
+String literals are considered as everything between two " that are
+not escaped. It may contain " between the two delimiting " as long 
+as it is scaped. eg: ('\"').
 */
 int isLiteral(char *value, int size)
 {
 	if (size <= 1)
 		return 0;
-
-	if ((*value != '"') || (*(value + size - 1) != '"') || 
+		
+	if((*value != '"') || (*(value + size - 1) != '"') ||
 		(*(value + size - 2) == '\\'))
 		return 0;
-		
-	for(int x = 1; x < size - 1; x++){
-	    if((*(value + x) == '\"') && (*(value + x - 1) != '\\'))
-	        return 0;
-	}
 
 	value++;
 	for (int x = 1; x < size - 1; x++, value++) {
