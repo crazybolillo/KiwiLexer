@@ -46,7 +46,7 @@ int isNumber(char *value, int size)
 
 /*
 Checks whether a stream of characters of n size is a
-string or not. Valid strings may only contain letters. 
+string or not. Valid strings may only contain letters and underscores. 
 Aa - Zz. Returns one if the char stream is a valid string
 otherwise it returns cero.
 */
@@ -74,6 +74,11 @@ int isLiteral(char *value, int size)
 	if ((*value != '"') || (*(value + size - 1) != '"') || 
 		(*(value + size - 2) == '\\'))
 		return 0;
+		
+	for(int x = 1; x < size - 1; x++){
+	    if((*(value + x) == '\"') && (*(value + x - 1) != '\\'))
+	        return 0;
+	}
 
 	value++;
 	for (int x = 1; x < size - 1; x++, value++) {
@@ -207,7 +212,7 @@ void destroyToken(struct Token *ptr)
 	if ((strcmp(ptr->type, DOUBLE_ID) == 0) ||
 		(strcmp(ptr->type, INT_ID) == 0) ||
 		(strcmp(ptr->type, STRING_ID) == 0) ||
-		(strcmp(ptr->type, NO_MATCH_ERR) == 0)) {
+		(strcmp(ptr->type, LIT_STRING_ID) == 0)) {
 		free(ptr->value);
 	}
 }
@@ -290,10 +295,8 @@ struct Token mem_tokenOnlyMatch(char *word, int wrdsize,
 }
 
 /*
-mem_lexInput are the core of the lexer for their respective tokenizer
-model. They work in exactly the same way with the only difference
-being the tokenizer. The function looks for the biggest match left to
-right inside the string. It does this by trying to match the whole
+mem_lexInput is the core. The function looks for the biggest match left
+to right inside the string. It does this by trying to match the whole
 string and decreasing its size by one each time it does not find a
 match. Decreasing the size each time by one ensures that whenever a match
 is found it will be the biggest one possible. Once a match is found it is
@@ -307,7 +310,6 @@ is the same as the string's size. This lexer will only match the strings
 found inside the tokenizer and the built in datatypes like int, double,
 string and string literal.
 */
-
 struct TokenStream *mem_lexInput(char *word, int wrdsize,  
 	struct mem_LinkToken *tok)
 {
