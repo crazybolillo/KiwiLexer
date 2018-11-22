@@ -32,6 +32,8 @@ int isNumber(char *val, int size);
 int isString(char *val, int size);
 int isLiteral(char *val, int size);
 
+int skipWhiteSpace(char **str, int limit);
+
 struct Token newUnknownToken(char *value, int valsize);
 struct Token newToken(char *type, char *value);
 struct Token newValToken(char *type, char *value, int valsize);
@@ -39,10 +41,13 @@ struct Token newTypeToken(char *type);
 void destroyToken(struct Token *token);
 void destroyTokenStream(struct TokenStream *token);
 void printTokenStream(struct TokenStream *token, char format);
+void appendToken(struct TokenStream *stream, struct Token value);
 
-/*Less memory consuming functions where the tokenizer does not have lexemes.*/
-struct Token mem_tokenOnlyMatch(char *stream, int strsize, struct mem_LinkToken *tokenizer);
+struct Token mem_tokenOnlyMatch(char *stream, int strsize, 
+	struct mem_LinkToken *tokenizer);
 struct TokenStream *mem_lexInput(char *word, int wrdsize,
+	struct mem_LinkToken *tok);
+struct TokenStream *tmem_lexInput(char *word, int wrdsize,
 	struct mem_LinkToken *tok);
 
 

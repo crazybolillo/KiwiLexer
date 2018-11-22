@@ -4,6 +4,7 @@ char *DOUBLE_ID = "DBL";
 char *INT_ID = "INT";
 char *STRING_ID = "STR";
 char *LIT_STRING_ID = "LIT_STR";
+
 char *NO_MATCH_ERR = "NME";
 
 
@@ -55,7 +56,7 @@ int isString(char *value, int size)
 		return 0;
 
 	for (int x = 0; x < size; x++) {
-		if (isalpha(*(value + x)) == 0)
+		if ((isalpha(*(value + x)) == 0) && (*(value + x) != '_'))
 			return 0;
 	}
 	return 1;
@@ -70,8 +71,15 @@ int isLiteral(char *value, int size)
 	if (size <= 1)
 		return 0;
 
-	if ((*value != '"') || (*(value + size - 1) != '"'))
+	if ((*value != '"') || (*(value + size - 1) != '"') || 
+		(*(value + size - 2) == '\\'))
 		return 0;
+
+	value++;
+	for (int x = 1; x < size - 1; x++, value++) {
+		if ((*value == '"') && (*(value - 1) != '\\'))
+			return 0;
+	}
 
 	return 1;
 }
@@ -109,8 +117,24 @@ struct Token builtInMatch(char *value, int size)
 }
 
 /*
+Skips all whitespace (tabs, newlines and spaces) until it finds
+a non white space character or reaches the limit.  Returns how many chars were skipped.
+MODIFIES the char pointer passed trough the parameters so it points
+to the next non-whitespace char. 
+*/
+int skipWhiteSpace(char **str, int limit)
+{
+	int x = 0;
+	for (; x < limit; x++, (*str)++) {
+		if ((**str != '\n') && (**str != '\t') && (**str != ' '))
+			return x;
+	}
+	return x;
+}
+
+/*
 Tries to match a stream of chars with the built in datatypes,
-integer, double and string. Returns a token with the respective
+integer, double and string. Returns a nextToken with the respective
 id and value if a match is found or one with a NO_MATCH_ERR id
 if no match is found.
 */
@@ -149,7 +173,7 @@ struct Token newToken(char *type, char *value)
 
 /*
 Creates a new Token where the values of the value ptr ARE COPIED
-and the token just points to the token pointer passed trough the
+and the nextToken just points to the nextToken pointer passed trough the
 parameters.
 */
 struct Token newValToken(char *type, char *value, int valsize)
@@ -162,7 +186,7 @@ struct Token newValToken(char *type, char *value, int valsize)
 }
 
 /*
-Creates a new Token where both its token and values point to the
+Creates a new Token where both its nextToken and values point to the
 pointer passed trough the parameters. Commonly used when the Token
 its is own Lexeme.
 */
@@ -176,7 +200,7 @@ struct Token newTypeToken(char *type)
 
 
 /*
-Frees all the memory used by a single token.
+Frees all the memory used by a single nextToken.
 */
 void destroyToken(struct Token *ptr)
 {
@@ -190,8 +214,8 @@ void destroyToken(struct Token *ptr)
 
 /*
 Frees all the memory used by the TokenStream. It just frees the
-pointers, not the values pointed to except where the token has the
-token of a built in datatype in which case it does free the
+pointers, not the values pointed to except where the nextToken has the
+nextToken of a built in datatype in which case it does free the
 char array the value points to (a copy of the original value).
 */
 void destroyTokenStream(struct TokenStream *ptr)
@@ -205,8 +229,8 @@ void destroyTokenStream(struct TokenStream *ptr)
 
 /*
 Prints the TokenStream, used for debugging. Modes should be passed
-as ints. Mode one prints just the token IDs, mode two prints just
-the token values and mode three prints both IDs and their values.
+as ints. Mode one prints just the nextToken IDs, mode two prints just
+the nextToken values and mode three prints both IDs and their values.
 */
 void printTokenStream(struct TokenStream *ptr, char format)
 {
@@ -326,4 +350,90 @@ struct TokenStream *mem_lexInput(char *word, int wrdsize,
 		}
 	}
 	return stream;
+}
+
+/*
+Adds the token passed trough the parameters to the TokenStream. 
+This memory handles all necessary memory allocation. 
+*/
+void appendToken(struct TokenStream *stream,
+	struct Token value)
+{
+	stream->size++;
+	stream->tokens = realloc(stream->tokens, 
+		sizeof(struct Token) * stream->size);
+	*(stream->tokens + stream->size - 1) = value;
+}
+
+/*
+Starts lexing just one char and increases the size to be lexed by one
+with each iteration. If a match is found it still increases the size
+to be lexed by one. It stops until a match is no longer found. Once a 
+match is no longer found the last match to be found is consumed and
+the process starts all over again. This ensures that the consumed match
+is the biggest match possible. If no match is found and the size that
+is trying to be lexed is equal to the input size then the first char of
+the input is discarded and the process begins all over again until the
+starting index is the same as the input size. It also skips over any
+trailing whitespaces.
+*/
+struct TokenStream *tmem_lexInput(char *word, int wrdsize,
+	struct mem_LinkToken *tok)
+{
+	struct TokenStream *stream = malloc(sizeof(struct TokenStream));
+	stream->size = 0;
+	stream->tokens = NULL;
+
+	unsigned char matchflag = 0x00;
+	int nstart = 0;
+	int nsize = 1;
+	int len;
+
+	struct Token nextToken;
+	struct Token prevToken;
+	while (nstart < wrdsize) {
+		if (nsize > wrdsize - nstart) {
+			if (wrdsize - nstart == 1) {
+				if (matchflag == 0xFF) {
+					appendToken(stream, prevToken);
+				}
+				return stream;
+			}
+			word++;
+			nstart++;
+			len = skipWhiteSpace(&word, wrdsize - nstart);
+			nstart += len;
+			nsize = 1;
+		}
+		nextToken = mem_tokenOnlyMatch(word, nsize, tok);
+		if (strcmp(nextToken.type, NO_MATCH_ERR) != 0){
+			matchflag = 0xFF;
+			prevToken = nextToken;
+			nsize++;
+		}
+		else {
+			nextToken = builtInMatch(word, nsize);
+			if (strcmp(nextToken.type, NO_MATCH_ERR) != 0) {
+				matchflag = 0xFF;
+				prevToken = nextToken;
+				nsize++;
+			}
+			else {
+				if (matchflag == 0xFF) {
+					matchflag = 0x00;
+					appendToken(stream, prevToken);
+					nstart += (nsize - 1);
+					word += (nsize - 1);
+					len = skipWhiteSpace(&word, wrdsize - nstart);
+					nstart += len;
+					nsize = 1;
+				}
+				else {
+					nsize++;
+				}
+			}
+		}
+	}
+	return stream;
+	
 }

@@ -1,5 +1,6 @@
 #include "Tokenizer.h"
 #include "Lexer.h"
+#include <time.h>
 
 #define CLEAR_COMAND "clear"
 
@@ -69,10 +70,17 @@ void main()
 				destroyTokenStream(tokenStream);
 				tokenStream = NULL;
 			}
+			clock_t initTime = clock();
 			unsigned int size = 0;
 			char *lex = readfile(input + strlen(LEX_CMD), &size, 256);
-			tokenStream = mem_lexInput(lex, size, mem_tokenizer);
-			free(lex);
+			if (lex != NULL) {
+				tokenStream = tmem_lexInput(lex, size, mem_tokenizer);
+				clock_t stopTime = clock();
+				printf("\nLexing file. %u bytes read.", size);
+				printf("Lexing completed. %d tokens generated.Took: %f seconds.\n",
+					tokenStream->size, (double)(stopTime - initTime) / CLOCKS_PER_SEC);
+				free(lex);
+			}
 		}
 		else if (strncmp(input, PRNT_LEX_CMD, strlen(PRNT_LEX_CMD)) == 0) {
 			if (tokenStream != NULL) {
