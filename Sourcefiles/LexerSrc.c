@@ -1,9 +1,9 @@
 #include "Lexer.h"
 
 char *DOUBLE_ID = "DBL";
-char *INT_ID = "INT";
+char *INTEGER_ID = "INT";
 char *STRING_ID = "STR";
-char *LIT_STRING_ID = "LIT_STR";
+char *CONST_STRING_ID = "CONST_STR";
 
 char *NO_MATCH_ERR = "NME";
 
@@ -78,7 +78,7 @@ int isLiteral(char *value, int size)
 	    delimitor = '"';
     }
     else if (*value == '\'') {
-        delimitor == '\'';
+        delimitor = '\'';
     }
     else return 0;
     
@@ -107,7 +107,7 @@ struct Token builtInMatch(char *value, int size)
 	flag = isNumber(value, size);
 	if (flag > 0) {
 		if (flag == INT_TYPE)
-			return newTypeToken(INT_ID);
+			return newTypeToken(INTEGER_ID);
 		else
 			return newTypeToken(DOUBLE_ID);
 	}
@@ -119,7 +119,7 @@ struct Token builtInMatch(char *value, int size)
 		else {
 			flag = isLiteral(value, size);
 			if (flag != 0)
-				return newTypeToken(LIT_STRING_ID);
+				return newTypeToken(CONST_STRING_ID);
 			else
 				return newTypeToken(NO_MATCH_ERR);
 		}
@@ -153,7 +153,7 @@ struct Token newUnknownToken(char *word, int size)
 	int flag = isNumber(word, size);
 	if (flag > 0) {
 		if (flag == INT_TYPE)
-			return newValToken(INT_ID, word, size);
+			return newValToken(INTEGER_ID, word, size);
 		else
 			return newValToken(DOUBLE_ID, word, size);
 	}
@@ -164,7 +164,7 @@ struct Token newUnknownToken(char *word, int size)
 		}
 	    flag = isLiteral(word, size);
 	    if(flag == 1)
-		    return newValToken(LIT_STRING_ID, word, size);
+		    return newValToken(CONST_STRING_ID, word, size);
 		else
 		    return newTypeToken(NO_MATCH_ERR);
 			       
@@ -218,9 +218,9 @@ Frees all the memory used by a single Token.
 void destroyToken(struct Token *ptr)
 {
 	if ((strcmp(ptr->type, DOUBLE_ID) == 0) ||
-		(strcmp(ptr->type, INT_ID) == 0) ||
+		(strcmp(ptr->type, INTEGER_ID) == 0) ||
 		(strcmp(ptr->type, STRING_ID) == 0) ||
-		(strcmp(ptr->type, LIT_STRING_ID) == 0)) {
+		(strcmp(ptr->type, CONST_STRING_ID) == 0)) {
 		free(ptr->value);
 	}
 }
@@ -328,7 +328,7 @@ the input is discarded and the process begins all over again until the
 starting index is the same as the input size. It also skips over any
 trailing whitespaces.
 */
-struct TokenStream *tmem_lexInput(char *word, int wrdsize,
+struct TokenStream *mem_lexInput(char *word, int wrdsize,
 	struct mem_LinkToken *tok)
 {
 	struct TokenStream *stream = malloc(sizeof(struct TokenStream));

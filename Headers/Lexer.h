@@ -5,9 +5,9 @@
 #include <ctype.h>
 
 extern char *DOUBLE_ID;
-extern char *INT_ID;
+extern char *INTEGER_ID;
 extern char *STRING_ID;
-extern char *LIT_STRING_ID;
+extern char *CONST_STRING_ID;
 extern char *MIX_STRING_ID;
 
 extern char *NO_MATCH_ERR;
@@ -46,8 +46,6 @@ void appendToken(struct TokenStream *stream, struct Token value);
 struct Token mem_tokenOnlyMatch(char *stream, int strsize, 
 	struct mem_LinkToken *tokenizer);
 struct TokenStream *mem_lexInput(char *word, int wrdsize,
-	struct mem_LinkToken *tok);
-struct TokenStream *tmem_lexInput(char *word, int wrdsize,
 	struct mem_LinkToken *tok);
 
 
