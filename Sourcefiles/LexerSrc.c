@@ -64,25 +64,34 @@ int isString(char *value, int size)
 
 /*
 Checks whether a char stream with n size is a string literal or not. 
-String literals are considered as everything between two " that are
-not escaped. It may contain " between the two delimiting " as long 
-as it is scaped. eg: ('\"').
+String literals are considered everything between two double or single
+quotes. It may contain double or single quotes inside as long as they are
+properly escaped. eg ("\"");
 */
 int isLiteral(char *value, int size)
 {
+    char delimitor;
 	if (size <= 1)
 		return 0;
 		
-	if((*value != '"') || (*(value + size - 1) != '"') ||
-		(*(value + size - 2) == '\\'))
-		return 0;
-
-	value++;
-	for (int x = 1; x < size - 1; x++, value++) {
-		if ((*value == '"') && (*(value - 1) != '\\'))
-			return 0;
-	}
-
+	if (*value == '"') {
+	    delimitor = '"';
+    }
+    else if (*value == '\'') {
+        delimitor == '\'';
+    }
+    else return 0;
+    
+    if((*(value + size - 1) != delimitor) || (*(value + size - 2) == '\\')){
+        return 0;
+    }
+    else{
+        value++;
+        for (int x = 1; x < (size - 1); x++, value++) {
+            if((*value == delimitor) && (*(value - 1) != '\\'))
+                return 0;
+        }
+    }
 	return 1;
 }
 
@@ -98,20 +107,19 @@ struct Token builtInMatch(char *value, int size)
 	flag = isNumber(value, size);
 	if (flag > 0) {
 		if (flag == INT_TYPE)
-			return newValToken(INT_ID, value, size);
+			return newTypeToken(INT_ID);
 		else
-			return newValToken(DOUBLE_ID, value, size);
+			return newTypeToken(DOUBLE_ID);
 	}
 	else {
 		flag = isString(value, size);
 		if (flag != 0) {
-			return newValToken(STRING_ID, value, size);
+			return newTypeToken(STRING_ID);
 		}
 		else {
 			flag = isLiteral(value, size);
 			if (flag != 0)
-				return newValToken(LIT_STRING_ID, value,
-					size);
+				return newTypeToken(LIT_STRING_ID);
 			else
 				return newTypeToken(NO_MATCH_ERR);
 		}
@@ -142,21 +150,24 @@ if no match is found.
 */
 struct Token newUnknownToken(char *word, int size)
 {
-	int digit = isNumber(word, size);
-	if (digit > 0) {
-		if (digit == INT_TYPE)
+	int flag = isNumber(word, size);
+	if (flag > 0) {
+		if (flag == INT_TYPE)
 			return newValToken(INT_ID, word, size);
 		else
 			return newValToken(DOUBLE_ID, word, size);
 	}
 	else {
-		int string = isString(word, size);
-		if (string == 1) {
+		flag = isString(word, size);
+		if (flag == 1) {
 			return newValToken(STRING_ID, word, size);
 		}
-		else {
-			return newValToken(NO_MATCH_ERR, word, size);
-		}
+	    flag = isLiteral(word, size);
+	    if(flag == 1)
+		    return newValToken(LIT_STRING_ID, word, size);
+		else
+		    return newTypeToken(NO_MATCH_ERR);
+			       
 	}
 }
 
@@ -202,7 +213,7 @@ struct Token newTypeToken(char *type)
 
 
 /*
-Frees all the memory used by a single nextToken.
+Frees all the memory used by a single Token. 
 */
 void destroyToken(struct Token *ptr)
 {
@@ -243,7 +254,7 @@ void printTokenStream(struct TokenStream *ptr, char format)
 				printf("\n");
 				format = 0;
 			}
-			printf("<\"%s\"> ", (ptr->tokens + x)->type);
+			printf("<%s> ", (ptr->tokens + x)->type);
 			format++;
 		}
 	}
@@ -254,7 +265,7 @@ void printTokenStream(struct TokenStream *ptr, char format)
 				printf("\n");
 				format = 0;
 			}
-			printf("<\"%s\"> ", (ptr->tokens + x)->value);
+			printf("<%s> ", (ptr->tokens + x)->value);
 			format++;
 		}
 	}
@@ -266,7 +277,7 @@ void printTokenStream(struct TokenStream *ptr, char format)
 				format = 0;
 			}
 			printf("<TYPE: \"%s\"", (ptr->tokens + x)->type);
-			printf(" VALUE: \"%s\"> ", (ptr->tokens + x)->value);
+			printf(" VALUE: %s> ", (ptr->tokens + x)->value);
 			format++;
 		}
 	}
@@ -291,65 +302,6 @@ struct Token mem_tokenOnlyMatch(char *word, int wrdsize,
 	return newTypeToken(NO_MATCH_ERR);
 }
 
-/*
-mem_lexInput is the core. The function looks for the biggest match left
-to right inside the string. It does this by trying to match the whole
-string and decreasing its size by one each time it does not find a
-match. Decreasing the size each time by one ensures that whenever a match
-is found it will be the biggest one possible. Once a match is found it is
-"consumed" and the starting index of the string is moved to the right 'n'
-spaces where 'n' is the size of the match found (if "Hi" is found the
-starting index will be moved two spaces to the right). If  no match is
-found after iterating trough the whole string then the string's starting
-index is moved one space to the right and the character to the left is
-discarded and the process begins all over again until the starting index
-is the same as the string's size. This lexer will only match the strings
-found inside the tokenizer and the built in datatypes like int, double,
-string and string literal.
-*/
-struct TokenStream *mem_lexInput(char *word, int wrdsize,  
-	struct mem_LinkToken *tok)
-{
-	struct TokenStream *stream = malloc(sizeof(struct TokenStream));
-	stream->size = 0;
-	stream->tokens = NULL;
-	int nstart = 0;
-	int nsize = wrdsize;
-
-	struct Token token;
-	while (nstart < wrdsize) {
-		if (nsize == 0) {
-			word++;
-			nstart++;
-			nsize = wrdsize - nstart;
-		}
-		token = mem_tokenOnlyMatch(word, nsize, tok);
-		if (strcmp(token.type, NO_MATCH_ERR) != 0) {
-			stream->size++;
-			stream->tokens = realloc(stream->tokens, 
-				sizeof(struct TokenStream) * stream->size);
-			*(stream->tokens + stream->size - 1) = token;
-			word += nsize;
-			nstart += nsize;
-			nsize = wrdsize - nstart;
-		}
-		else {
-			token = builtInMatch(word, nsize);
-			if (strcmp(token.type, NO_MATCH_ERR) != 0) {
-				stream->size++;
-				stream->tokens = realloc(stream->tokens,
-					sizeof(struct TokenStream) * stream->size);
-				*(stream->tokens + stream->size - 1) = token;
-				word += nsize;
-				nstart += nsize;
-				nsize = wrdsize - nstart;
-			}
-			else
-				nsize--;
-		}
-	}
-	return stream;
-}
 
 /*
 Adds the token passed trough the parameters to the TokenStream. 
@@ -382,7 +334,12 @@ struct TokenStream *tmem_lexInput(char *word, int wrdsize,
 	struct TokenStream *stream = malloc(sizeof(struct TokenStream));
 	stream->size = 0;
 	stream->tokens = NULL;
-
+    
+    /*
+    0x00 means there is no match. 
+    0xAA means the match belongs to the alphabet. 
+    0xFF means the match belongs to one of the built in datatypes.
+    */
 	unsigned char matchflag = 0x00;
 	int nstart = 0;
 	int nsize = 1;
@@ -393,8 +350,14 @@ struct TokenStream *tmem_lexInput(char *word, int wrdsize,
 	while (nstart < wrdsize) {
 		if (nsize > wrdsize - nstart) {
 			if (wrdsize - nstart == 1) {
-				if (matchflag == 0xFF) {
-					appendToken(stream, prevToken);
+				if (matchflag != 0x00) {
+				    if(matchflag == 0xAA){
+			            appendToken(stream, prevToken);
+			        }
+			        else{
+			            appendToken(stream, newUnknownToken(word, 1));
+			        } 
+			        return stream;  
 				}
 				return stream;
 			}
@@ -406,7 +369,7 @@ struct TokenStream *tmem_lexInput(char *word, int wrdsize,
 		}
 		nextToken = mem_tokenOnlyMatch(word, nsize, tok);
 		if (strcmp(nextToken.type, NO_MATCH_ERR) != 0){
-			matchflag = 0xFF;
+			matchflag = 0xAA;
 			prevToken = nextToken;
 			nsize++;
 		}
@@ -418,9 +381,14 @@ struct TokenStream *tmem_lexInput(char *word, int wrdsize,
 				nsize++;
 			}
 			else {
-				if (matchflag == 0xFF) {
+				if (matchflag != 0x00) {
+					if(matchflag == 0xAA){
+				        appendToken(stream, prevToken);
+					}
+					else{
+					    appendToken(stream, newUnknownToken(word, nsize - 1));
+					}
 					matchflag = 0x00;
-					appendToken(stream, prevToken);
 					nstart += (nsize - 1);
 					word += (nsize - 1);
 					len = skipWhiteSpace(&word, wrdsize - nstart);
