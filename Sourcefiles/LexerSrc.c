@@ -82,15 +82,34 @@ int isLiteral(char *value, int size)
     }
     else return 0;
     
-    if((*(value + size - 1) != delimitor) || (*(value + size - 2) == '\\')){
+    /*If the end of the string is not equal to the delimitor or the
+    delimitor is escaped by a backlash which is not escaped.*/
+    if ((*(value + size - 1) != delimitor)) {
         return 0;
     }
-    else{
-        value++;
-        for (int x = 1; x < (size - 1); x++, value++) {
-            if((*value == delimitor) && (*(value - 1) != '\\'))
+    if ((*(value + size - 2) == '\\')) {
+        if (size < 4) {
+            return 0;
+        }
+        else {
+            int slashcount = 1;
+            for(int x = size - 3; x > 0; x--) {
+                if (*(value + x) == '\\') {
+                    slashcount++;
+                }     
+                else {
+                    break;
+                }
+            }
+            if(slashcount % 2 != 0)
                 return 0;
         }
+    }
+    
+    value++;
+    for (int x = 1; x < (size - 1); x++, value++) {
+        if((*value == delimitor) && (*(value - 1) != '\\'))
+            return 0;
     }
 	return 1;
 }
@@ -254,7 +273,7 @@ void printTokenStream(struct TokenStream *ptr, char format)
 				printf("\n");
 				format = 0;
 			}
-			printf("<%s> ", (ptr->tokens + x)->type);
+			printf("< %s > ", (ptr->tokens + x)->type);
 			format++;
 		}
 	}
@@ -265,7 +284,7 @@ void printTokenStream(struct TokenStream *ptr, char format)
 				printf("\n");
 				format = 0;
 			}
-			printf("<%s> ", (ptr->tokens + x)->value);
+			printf("< %s > ", (ptr->tokens + x)->value);
 			format++;
 		}
 	}
@@ -277,7 +296,7 @@ void printTokenStream(struct TokenStream *ptr, char format)
 				format = 0;
 			}
 			printf("<TYPE: \"%s\"", (ptr->tokens + x)->type);
-			printf(" VALUE: %s> ", (ptr->tokens + x)->value);
+			printf(" VALUE: %s > ", (ptr->tokens + x)->value);
 			format++;
 		}
 	}
