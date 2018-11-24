@@ -1,30 +1,31 @@
 # KiwiLexer
-Because reinventing the wheel is always fun...
-This is a Lexer focused on simplicty. It has two goals:
+If worse is better then UNESCO might as well declare this one of the seven wonders. This is a Lexer with two goals:
 * Simple, small and readable source code. Everyone should be able to just open a source file and be able to understand it without having to browse the whole repository looking for missing pieces. 
-* Memory efficient. The less memory used the better. I will try to make this program use as little memory as possible. All code is tested
-with valgrind to check for memory leaks too. 
+* Memory efficient. The less memory used the better. 
 
-## Capabilities
-The Lexer is able to lex C code source files correctly. A text file with the C alphabet can be found on the source files and you can use the TestShell to try it out for yourself.  
+## KiwiLexer in a nutshell.
+I have been testing this Lexer by lexing C source files. So far the lexer has correctly lexed everything. The Lexer combines a set of strings (I will call it alphabet) and built in types (cool word for regex) to lex input. You can find an example of the C language alphabet on the source files folder. As for types, the Lexer comes with some built in types so it is able to match digits, strings and literal strings (text quoted by double or single quotes) out of the box. The Lexer does not support regex so any regex must be hardwritten into the code. I know that sounds scary but it is not, read about limitations to read about this great design decision.
 
-The source code is also minimal and easy to modify. The whole lexer file is probably around 200 lines without comments. There is no obfuscation at all and all files follow a naming convention that makes it very easy to find the .c file that implements the headers. This means you can just open a file and understand it without having to find typedefs or other definitions deep down a 1000 file repository.
+Currently loading the C alphabet into memory consumes around 1300 bytes. Lexing 6108 bytes of C code takes 0.013764 seconds on an Intel Core 2 DUO CPU @2.20GHz (its a crappy Thinkpad). (Fun fact, those 6108 bytes correspond to the file LexerSrc.c without comments. Can be found under sourcefiles).
 
-## Using the test shell:
-To compile it on Linux just use:
+This Lexer can be used both in Windows or Linux. I have not tested it on a Mac yet because I'm too poor.
+
+## Current state
+As far as I am concerned the Lexer is finished. I will now work on implementing a parser to go with it. If you are interested in development I wrote a very simple command line I have been using to test the Lexer. The command line is able to read alphabets, use them to lex text and print the tokens found. I will probably add parsing capabilities to it once I have a semi-working parser.
+
+To compile the command line testing utility just do:
 ```
-gcc -o KiwiShell TokenizerSrc.c LexerSrc.c TestShell.c -I pathToThisFolder/Headers
+$(YOUR_COMPILER) -o TestingShell TokenizerSrc.c LexerSrc.c TestShell.c -I $(PATH_TO_HEADERS_FOLDER)
 ```
-To compile it on Windows:
-```
-You gotta use nmake which I do not know how to use. Sorry
-```
+I will soon elaborate real makefiles both for Windows and Linux.
 
 ## Limitations
-The main limitation is it does not support regular expressions. Other programs like Flex support them and use them to declare what are considered valid identifiers or digits. This lexer avoids that by providing built in datatypes. The built in datatypes are the following:
+This Lexer does not support regex. Any regex matching needs to be hand written into the code. The Lexer comes with 3 "regex" expressions hand built into the code. You can check the source code to get an idea. (LexerSrc.c, three functions. isNumber, isString and IsLiteral.
+* Digits. it will match any sequence of numbers as long as there is one or zero decimal points and one or zero minus signs.
+* Strings. It will match any sequence of characters [Aa-Zz] and underscores. 
+* Constant Strings. It will match any sequence of characters surrounded by non-escaped double or single quotes.
 
-* Strings. Anything that consists of just characters will be matched as a string. This means that Strings are valid identifiers. 
-* String literals. Anything between two '"' will be matched as a string literal. 
-* Numbers. Negative or with decimal point, if it finds a stream of numbers it will match them as their type, whether they are integers or real numbers.
-
-On a bright side this built in datatypes mean that if you dont really need to write or load an alphabet into memory if you are just looking to lex the built in datatypes.
+## Upcoming
+* Documentation on most of the source code and on how to easily hand write your own regex into the source code in under five minutes.
+* A parser.
+* Some tweaks to try and use less memory, specially when lexing.
