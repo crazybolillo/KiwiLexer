@@ -11,9 +11,16 @@ extern char *CONST_STRING_ID;
 extern char *MIX_STRING_ID;
 
 extern char *NO_MATCH_ERR;
+extern char *EOF_ID;
 
 #define DOUBLE_TYPE 2
 #define INT_TYPE 1
+
+struct KiwiInput {
+	char *text;
+	unsigned int textSize;
+	unsigned int readSize;
+};
 
 struct Token {
 	char *type;
@@ -43,10 +50,11 @@ void destroyTokenStream(struct TokenStream *token);
 void printTokenStream(struct TokenStream *token, char format);
 void appendToken(struct TokenStream *stream, struct Token value);
 
-struct Token mem_tokenOnlyMatch(char *stream, int strsize, 
+struct Token mem_tokenOnlyMatch(char *word, int wrdize, 
 	struct mem_LinkToken *tokenizer);
-struct TokenStream *mem_lexInput(char *word, int wrdsize,
+struct TokenStream *mem_lexAll(struct KiwiInput *input,
 	struct mem_LinkToken *tok);
-
+struct Token mem_lexNext(struct KiwiInput *input,
+	struct mem_LinkToken *tokenizer);
 
 #endif

@@ -73,8 +73,12 @@ void main()
 			unsigned int size = 0;
 			char *lex = readfile(input + strlen(LEX_CMD), &size, 256);
 			if (lex != NULL) {
+				struct KiwiInput input;
+				input.text = lex;
+				input.textSize = size;
+				input.readSize = 0;
 			    printf("\nLexing file... %u bytes read.\n", size);
-				tokenStream = mem_lexInput(lex, size, mem_tokenizer);
+				tokenStream = mem_lexAll(&input, mem_tokenizer);
 				clock_t stopTime = clock();
 				printf("Lexing completed. %d tokens generated.Took: %f seconds.\n",
 					tokenStream->size, (double)(stopTime - initTime) / CLOCKS_PER_SEC);

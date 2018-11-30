@@ -6,6 +6,7 @@ char *STRING_ID = "STR";
 char *CONST_STRING_ID = "CONST_STR";
 
 char *NO_MATCH_ERR = "NME";
+char *EOF_ID = "KEOF";
 
 
 /*
@@ -204,9 +205,9 @@ struct Token newToken(char *type, char *value)
 }
 
 /*
-Creates a new Token where the values of the value ptr ARE COPIED
-and the nextToken just points to the nextToken pointer passed trough the
-parameters.
+Creates a new Token where the values of the value ptr ARE COPIED 
+(memcpy) and the type of the token just points to the one passed 
+trough the parameters.
 */
 struct Token newValToken(char *type, char *value, int valsize)
 {
@@ -347,79 +348,106 @@ the input is discarded and the process begins all over again until the
 starting index is the same as the input size. It also skips over any
 trailing whitespaces.
 */
-struct TokenStream *mem_lexInput(char *word, int wrdsize,
+struct TokenStream *mem_lexAll(struct KiwiInput *input,
 	struct mem_LinkToken *tok)
 {
 	struct TokenStream *stream = malloc(sizeof(struct TokenStream));
 	stream->size = 0;
 	stream->tokens = NULL;
-    
-    /*
-    0x00 means there is no match. 
-    0xAA means the match belongs to the alphabet. 
-    0xFF means the match belongs to one of the built in datatypes.
-    */
-	unsigned char matchflag = 0x00;
-	int nstart = 0;
-	int nsize = 1;
-	int len;
 
-	struct Token nextToken;
-	struct Token prevToken;
-	while (nstart < wrdsize) {
-		if (nsize > wrdsize - nstart) {
-			if (wrdsize - nstart == 1) {
-				if (matchflag != 0x00) {
-				    if(matchflag == 0xAA){
-			            appendToken(stream, prevToken);
-			        }
-			        else{
-			            appendToken(stream, newUnknownToken(word, 1));
-			        } 
-			        return stream;  
-				}
-				return stream;
-			}
-			word++;
-			nstart++;
-			len = skipWhiteSpace(&word, wrdsize - nstart);
-			nstart += len;
-			nsize = 1;
-		}
-		nextToken = mem_tokenOnlyMatch(word, nsize, tok);
-		if (strcmp(nextToken.type, NO_MATCH_ERR) != 0){
-			matchflag = 0xAA;
-			prevToken = nextToken;
-			nsize++;
-		}
-		else {
-			nextToken = builtInMatch(word, nsize);
-			if (strcmp(nextToken.type, NO_MATCH_ERR) != 0) {
-				matchflag = 0xFF;
-				prevToken = nextToken;
-				nsize++;
-			}
-			else {
-				if (matchflag != 0x00) {
-					if(matchflag == 0xAA){
-				        appendToken(stream, prevToken);
-					}
-					else{
-					    appendToken(stream, newUnknownToken(word, nsize - 1));
-					}
-					matchflag = 0x00;
-					nstart += (nsize - 1);
-					word += (nsize - 1);
-					len = skipWhiteSpace(&word, wrdsize - nstart);
-					nstart += len;
-					nsize = 1;
-				}
-				else {
-					nsize++;
-				}
-			}
-		}
+	struct Token token;
+	while (1) {
+		token = mem_lexNext(input, tok);
+		if (strcmp(token.type, EOF_ID) != 0) 
+			appendToken(stream, token);
+		else
+			return stream;
 	}
 	return stream;
 	
+}
+
+/*Returns the next match found inside the text passed trough the 
+paremeters. Updates the char pointer and readsize inside KiwiInput
+accordingly.*/      
+struct Token mem_lexNext(struct KiwiInput *input,
+	struct mem_LinkToken *tokenizer)
+{
+	/*
+	0x00 means there is no match.
+	0xAA means the match belongs to the alphabet.
+	0xFF means the match belongs to one of the built in datatypes.
+	*/
+	unsigned char matchflag = 0x00;
+	unsigned int nsize = 1;
+	struct Token nextToken;
+	struct Token prevToken;
+		
+	while (1) {
+		if (nsize > input->textSize - input->readSize) {
+			if (input->textSize - input->readSize <= 0) {
+				return newTypeToken(EOF_ID);
+			}
+			if (input->textSize - input->readSize == 1) {
+				if (matchflag != 0x00) {
+					if (matchflag == 0xAA) {
+						input->readSize++;
+						input->text++;
+						return prevToken;
+					}
+					if (matchflag == 0xFF) {
+						prevToken =  newValToken(prevToken.type,
+							input->text, 1);
+						input->readSize++;
+						input->text++;
+						return prevToken;
+					}
+					return newTypeToken(EOF_ID);
+				}
+			}
+			else {
+				input->text++;
+				input->readSize++;
+				nsize = 1;
+			}
+		}
+		nextToken = mem_tokenOnlyMatch(input->text, nsize, tokenizer);
+		if (strcmp(nextToken.type, NO_MATCH_ERR) != 0) {
+			matchflag = 0xAA;
+			prevToken = nextToken;
+			nsize++;
+			continue;
+		}
+		nextToken = builtInMatch(input->text, nsize);
+		if (strcmp(nextToken.type, NO_MATCH_ERR) != 0) {
+			matchflag = 0xFF;
+			prevToken = nextToken;
+			nsize++;
+			continue;
+		}
+		if (matchflag != 0x00)
+			break;
+		else
+			nsize++;
+	}
+	if (matchflag == 0xAA) {
+		int len = nsize - 1;
+		input->text += len;
+		input->readSize += len;
+		len = skipWhiteSpace(&(input->text),
+			input->textSize - input->readSize);
+		input->readSize += len;
+		return prevToken;
+	}
+	else if (matchflag == 0xFF) {
+		int len = nsize - 1;
+		prevToken = newValToken(prevToken.type, input->text, len);
+		input->text += len;
+		input->readSize += len;
+		len = skipWhiteSpace(&(input->text),
+			input->textSize - input->readSize);
+		input->readSize += len;
+		return prevToken;
+	}
+	return newTypeToken(EOF_ID);
 }
