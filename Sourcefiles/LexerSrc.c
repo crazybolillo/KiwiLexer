@@ -163,35 +163,6 @@ int skipWhiteSpace(char **str, int limit)
 }
 
 /*
-Tries to match a stream of chars with the built in datatypes,
-integer, double and string. Returns a nextToken with the respective
-id and value if a match is found or one with a NO_MATCH_ERR id
-if no match is found.
-*/
-struct Token newUnknownToken(char *word, int size)
-{
-	int flag = isNumber(word, size);
-	if (flag > 0) {
-		if (flag == INT_TYPE)
-			return newValToken(INTEGER_ID, word, size);
-		else
-			return newValToken(DOUBLE_ID, word, size);
-	}
-	else {
-		flag = isString(word, size);
-		if (flag == 1) {
-			return newValToken(STRING_ID, word, size);
-		}
-	    flag = isLiteral(word, size);
-	    if(flag == 1)
-		    return newValToken(CONST_STRING_ID, word, size);
-		else
-		    return newTypeToken(NO_MATCH_ERR);
-			       
-	}
-}
-
-/*
 Creates a new Token that simply points to the char ptrs
 passed trough the parameters. Pointer values are NOT copied,
 the struct just points to those pointers.
@@ -308,13 +279,13 @@ Tries to match a char stream of n size ONLY with the tokens found inside
 the tokenizer.
 */
 struct Token mem_tokenOnlyMatch(char *word, int wrdsize, 
-	struct mem_LinkToken *tok)
+	struct LinkList *tok)
 {
-	struct mem_LinkToken *tmphead = tok;
+	struct LinkList *tmphead = tok;
 	while (tok != NULL) {
-		if ((strncmp(tok->id, word, wrdsize) == 0) &&
-			(strlen(tok->id) == wrdsize))
-			return newTypeToken(tok->id);
+		if ((strncmp(tok->value, word, wrdsize) == 0) &&
+			(strlen(tok->value) == wrdsize))
+			return newTypeToken(tok->value);
 		else
 			tok = tok->next;
 	}
@@ -349,7 +320,7 @@ starting index is the same as the input size. It also skips over any
 trailing whitespaces.
 */
 struct TokenStream *mem_lexAll(struct KiwiInput *input,
-	struct mem_LinkToken *tok)
+	struct LinkList *tok)
 {
 	struct TokenStream *stream = malloc(sizeof(struct TokenStream));
 	stream->size = 0;
@@ -371,7 +342,7 @@ struct TokenStream *mem_lexAll(struct KiwiInput *input,
 paremeters. Updates the char pointer and readsize inside KiwiInput
 accordingly.*/      
 struct Token mem_lexNext(struct KiwiInput *input,
-	struct mem_LinkToken *tokenizer)
+	struct LinkList *tokenizer)
 {
 	/*
 	0x00 means there is no match.

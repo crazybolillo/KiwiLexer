@@ -28,10 +28,12 @@ exit --> Exits the shell.\n"
 
 
 #define BUF_SIZE 156
+#define LEXER_MEMORY_SIZE 1440
 
 static char input[BUF_SIZE];
+char tokmemory[LEXER_MEMORY_SIZE];
 static struct TokenStream *tokenStream = NULL;
-static struct mem_LinkToken *mem_tokenizer = NULL;
+static struct LinkList *mem_tokenizer = NULL;
 
 void getInput(void);
 void clearscr(void);
@@ -40,6 +42,7 @@ char *readfile(char *filename, unsigned int *fsize, int sector);
 
 void main()
 {
+	initTokenizerMemory(tokmemory, LEXER_MEMORY_SIZE);
 	printf(INIT_MSG);
 	while (1) {
 		getInput();
@@ -135,9 +138,6 @@ void freeptr() {
 	if (tokenStream != NULL) {
 		destroyTokenStream(tokenStream);
 		tokenStream = NULL;
-	}
-	if (mem_tokenizer != NULL) {
-		mem_destroyTokenizer(mem_tokenizer);
 	}
 }
 

@@ -2,6 +2,8 @@
 #define LEXER_HEADER_GUARD
 
 #include "Tokenizer.h"
+#include "Memory.h"
+#include "Data.h"
 #include <ctype.h>
 
 extern char *DOUBLE_ID;
@@ -41,7 +43,6 @@ int isLiteral(char *val, int size);
 
 int skipWhiteSpace(char **str, int limit);
 
-struct Token newUnknownToken(char *value, int valsize);
 struct Token newToken(char *type, char *value);
 struct Token newValToken(char *type, char *value, int valsize);
 struct Token newTypeToken(char *type);
@@ -51,10 +52,10 @@ void printTokenStream(struct TokenStream *token, char format);
 void appendToken(struct TokenStream *stream, struct Token value);
 
 struct Token mem_tokenOnlyMatch(char *word, int wrdize, 
-	struct mem_LinkToken *tokenizer);
+	struct LinkList *tokenizer);
 struct TokenStream *mem_lexAll(struct KiwiInput *input,
-	struct mem_LinkToken *tok);
+	struct LinkList *tok);
 struct Token mem_lexNext(struct KiwiInput *input,
-	struct mem_LinkToken *tokenizer);
+	struct LinkList *tokenizer);
 
 #endif
