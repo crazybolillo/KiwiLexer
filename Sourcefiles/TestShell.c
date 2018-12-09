@@ -28,12 +28,31 @@ exit --> Exits the shell.\n"
 
 
 #define BUF_SIZE 156
-#define LEXER_MEMORY_SIZE 1440
+#define TOK_MEM_SIZE 1440
+#define LEX_MEM_SIZE 4096
+#define PARS_MEM_SIZE 4096
+#define PARS_BUF_MEM_SIZE 4096
 
 static char input[BUF_SIZE];
-char tokmemory[LEXER_MEMORY_SIZE];
-static struct TokenStream *tokenStream = NULL;
+
+static char tokmemory[TOK_MEM_SIZE];
+static struct MemBlock tokmem;
 static struct LinkList *mem_tokenizer = NULL;
+
+static char lexmemory[LEX_MEM_SIZE];
+static struct MemBlock lexmem;
+static struct Token *tokenStream = NULL;
+
+static char parsememory[PARS_MEM_SIZE];
+static struct MemBlock parsmem;
+static struct LinkList *parser;
+
+static char parsebufmemory[PARS_BUF_MEM_SIZE];
+static struct MemBlock parsbufmem;
+
+static char test[6];
+static struct MemBlock testmem;
+
 
 void getInput(void);
 void clearscr(void);
@@ -42,7 +61,10 @@ char *readfile(char *filename, unsigned int *fsize, int sector);
 
 void main()
 {
-	initTokenizerMemory(tokmemory, LEXER_MEMORY_SIZE);
+	tokmem = initMemory(tokmemory, TOK_MEM_SIZE);	
+	lexmem = initMemory(lexmemory, LEX_MEM_SIZE);
+	parsmem = initMemory(parsememory, PARS_MEM_SIZE);
+	parsbufmem = initMemory(parsebufmemory, PARS_BUF_MEM_SIZE);
 	printf(INIT_MSG);
 	while (1) {
 		getInput();
@@ -54,7 +76,8 @@ void main()
 			int size = 0;
 			char *alphabet = readfile(input + strlen(TOKEN_CMD), &size, 256);
 			if (alphabet != NULL) {
-				mem_tokenizer = mem_createTokenizer(alphabet, size);
+				mem_tokenizer = mem_createTokenizer(alphabet, size,
+					&tokmem);
 				free(alphabet);
 			}
 		}
@@ -69,7 +92,7 @@ void main()
 		}
 		else if (strncmp(input, LEX_CMD, strlen(LEX_CMD)) == 0) {
 			if (tokenStream != NULL) {
-				destroyTokenStream(tokenStream);
+				freeMemory(&lexmem);
 				tokenStream = NULL;
 			}
 			clock_t initTime = clock();
@@ -81,10 +104,10 @@ void main()
 				input.textSize = size;
 				input.readSize = 0;
 			    printf("\nLexing file... %u bytes read.\n", size);
-				tokenStream = mem_lexAll(&input, mem_tokenizer);
+				tokenStream = lexAll(&input, mem_tokenizer, &lexmem);
 				clock_t stopTime = clock();
-				printf("Lexing completed. %d tokens generated.Took: %f seconds.\n",
-					tokenStream->size, (double)(stopTime - initTime) / CLOCKS_PER_SEC);
+				printf("Lexing completed. Took: %f seconds.\n",
+					(double)(stopTime - initTime) / CLOCKS_PER_SEC);
 				free(lex);
 			}
 		}
@@ -136,8 +159,12 @@ void clearscr()
 
 void freeptr() {
 	if (tokenStream != NULL) {
-		destroyTokenStream(tokenStream);
 		tokenStream = NULL;
+		freeMemory(&lexmem);
+	}
+	if (mem_tokenizer != NULL) {
+		mem_tokenizer = NULL;
+		freeMemory(&tokmem);
 	}
 }
 

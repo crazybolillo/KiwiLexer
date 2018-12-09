@@ -3,13 +3,17 @@
 /*
 Creates a new LinkedList.
 */
-struct LinkList newLinkList(void *value)
+struct LinkList *newLinkList(void *value, struct MemBlock *mem)
 {
-	struct LinkList retval;
-	retval.value = value;
-	retval.next = NULL;
+	struct LinkList *retval = kimalloc(sizeof(struct LinkList), mem);
+	if (retval == NULL) {
+		return NULL;
+	}
+	retval->value = value;
+	retval->next = NULL;
 	return retval;
 }
+
 
 /*
 Adds the LinkedList to the head. 

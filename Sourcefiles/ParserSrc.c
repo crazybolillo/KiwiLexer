@@ -1,57 +1,75 @@
 #include "Parser.h"
 
 char *PARSE_ERR = "KPER";
+char *PROD_SIGNAL = "->";
+char *PROD_END = ";";
 
-void addGrammar(struct Production *prod, struct Grammar *grammar)
+struct NestLinkList *newProduction(char *prodname, int namesize, struct
+	MemBlock *mem)
 {
-	if (prod->gram == NULL) {
-		prod->gram = grammar;
-		return;
+	struct NestLinkList *retval = kimalloc(sizeof(struct NestLinkList),
+		mem);
+	if (retval == NULL) {
+		return NULL;
 	}
-	else if (prod->gram->next == NULL) {
-		prod->gram->next = grammar;
+	retval->value = kicalloc(sizeof(char) * namesize + 1, mem);
+	if (retval->value == NULL) {
+		popMemory(mem, sizeof(struct NestLinkList));
+		return NULL;
 	}
+	memcpy(retval->value, prodname, namesize);
+	retval->next = NULL;
+	retval->nestval = NULL;
+	return retval;
 }
 
-
-struct Production *newProduction(char *prodname, int namesize)
+struct LinkList *newGrammar(char *type, int typesz,
+	struct LinkList *tokenizer, struct MemBlock *mem)
 {
-	struct Production *retval = malloc(sizeof(struct Production));
-	retval->prodname = calloc(namesize + 1, sizeof(char));
-	memcpy(retval->prodname, prodname, namesize);
+	struct LinkList *retval = kimalloc(sizeof(struct LinkList),
+		mem);
+	if (retval == NULL) {
+		return NULL;
+	}
+	retval->value = contains(type, typesz, tokenizer);
+	if (retval->value == NULL) {
+		freeMemory(mem);
+		return NULL;
+	}
 	retval->next = NULL;
 	return retval;
 }
 
-struct Grammar newGrammar(char *type, int typesz, 
-	struct LinkList *tokenizer)
+struct NestLinkList *newParser(struct KiwiInput *input,
+	struct LinkList *tokenizer, struct MemBlock *mem)
 {
-	char *ntype = contains(type, typesz, tokenizer);
-	struct Grammar retval;
-	if (ntype != NULL) {
-		retval.type = ntype;
-		retval.next = NULL;
+	struct NestLinkList *retval;
+	struct LinkList *gram;
+	struct Token *token = lexNext(input, tokenizer, mem);
+	if (strcmp(token->type, CONST_STRING_ID) != 0) {
+		return NULL;
 	}
-	else {
-		retval.type = NULL;
-		retval.next = NULL;
+	retval = newProduction(token->value, strlen(token->value), mem);
+	retval->next = NULL;
+	if (retval == NULL) {
+		return NULL;
 	}
-	return retval;
-}
-
-struct Production *parseNextProduction(struct KiwiInput *input, 
-	struct LinkList *tokenizer)
-{
-	unsigned char errflag = 0x00; 
-	struct Token lextok;
-	struct Production *retval = NULL;
-	while (1) {
-		lextok = mem_lexNext(input, tokenizer);
-		if (strcmp(lextok.type, EOF_ID) == 0) {
-			return NULL;
+	token = lexNext(input, tokenizer, mem);
+	if (strcmp(token->type, PROD_SIGNAL) != 0) {
+		freeMemory(mem);
+		return NULL;
+	}
+	while(1) {
+		token = lexNext(input, tokenizer, mem);
+		if (strcmp(token->type, CONST_STRING_ID) == 0) {
+			gram = newLinkList(token->type, mem);
 		}
-		else if (lextok.type == CONST_STRING_ID) {
-			
+		else if (strcmp(token->type, PROD_END) == 0) {
+			return retval;
+		}
+		else {
+			freeMemory(mem);
+			return NULL;
 		}
 	}
 }

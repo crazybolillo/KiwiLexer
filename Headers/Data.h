@@ -3,13 +3,20 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "Memory.h"
 
 struct LinkList {
 	void *value;
 	struct LinkList *next;
 };
 
-struct LinkList newLinkList(void *value);
+struct NestLinkList {
+	void *value;
+	struct NestLinkList *next;
+	struct LinkList *nestval;
+};
+
+struct LinkList *newLinkList(void *value, struct MemBlock *mem);
 void appendToList(struct LinkList *data, struct LinkList **head);
 void destroyList(struct LinkList *list);
 void destroyAllList(struct LinkList *list);

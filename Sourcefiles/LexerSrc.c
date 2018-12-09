@@ -5,9 +5,14 @@ char *INTEGER_ID = "INT";
 char *STRING_ID = "STR";
 char *CONST_STRING_ID = "CONST_STR";
 
-char *NO_MATCH_ERR = "NME";
+char *NO_MATCH_ERR = "KNME"; 
 char *EOF_ID = "KEOF";
 
+/*Can't  use "char *BUILT_IN_TYPES[]" because apparently the
+corresponding values arent constant enough so I use 
+memory adresses instead which somehow are more constant.*/
+char **BUILT_IN_TYPES[] = {&DOUBLE_ID, &INTEGER_ID, &STRING_ID,
+ &CONST_STRING_ID, &NO_MATCH_ERR, &EOF_ID};
 
 /*
 Checks whether a stream of characters of n size is 
@@ -121,27 +126,27 @@ the built in data types consisting of integers, doubles
 or strings and literals. Returns their respective IDs if a 
 match is found. Otherwise it returns the NO_MATCH_ERR ID.
 */
-struct Token builtInMatch(char *value, int size)
+char *builtInMatch(char *value, int size)
 {
 	int flag;
 	flag = isNumber(value, size);
 	if (flag > 0) {
 		if (flag == INT_TYPE)
-			return newTypeToken(INTEGER_ID);
+			return INTEGER_ID;
 		else
-			return newTypeToken(DOUBLE_ID);
+			return DOUBLE_ID;
 	}
 	else {
 		flag = isString(value, size);
 		if (flag != 0) {
-			return newTypeToken(STRING_ID);
+			return STRING_ID;
 		}
 		else {
 			flag = isLiteral(value, size);
 			if (flag != 0)
-				return newTypeToken(CONST_STRING_ID);
+				return CONST_STRING_ID;
 			else
-				return newTypeToken(NO_MATCH_ERR);
+				return NO_MATCH_ERR;
 		}
 	}
 }
@@ -167,11 +172,15 @@ Creates a new Token that simply points to the char ptrs
 passed trough the parameters. Pointer values are NOT copied,
 the struct just points to those pointers.
 */
-struct Token newToken(char *type, char *value)
+struct Token *newToken(char *type, char *value, struct MemBlock *mem)
 {
-	struct Token retval;
-	retval.type = type;
-	retval.value = value;
+	struct Token *retval = kimalloc(sizeof(struct Token), mem);
+	if (retval == NULL) {
+		return NULL;
+	}
+	retval->type = type;
+	retval->value = value;
+	retval->next = NULL;
 	return retval;
 }
 
@@ -180,12 +189,21 @@ Creates a new Token where the values of the value ptr ARE COPIED
 (memcpy) and the type of the token just points to the one passed 
 trough the parameters.
 */
-struct Token newValToken(char *type, char *value, int valsize)
+struct Token *newValToken(char *type, char *value, int valsize,
+	struct MemBlock *mem)
 {
-	struct Token retval;
-	retval.type = type;
-	retval.value = calloc(valsize + 1, sizeof(char));
-	memcpy(retval.value, value, valsize);
+	struct Token *retval = kimalloc(sizeof(struct Token), mem);
+	if (retval == NULL) {
+		return NULL;
+	}
+	retval->type = type;
+	retval->value = kicalloc(valsize + 1 * sizeof(char), mem);
+	if (retval->value == NULL) {
+		popMemory(mem, sizeof(struct Token));
+		return NULL;
+	}
+	memcpy(retval->value, value, valsize);
+	retval->next = NULL;
 	return retval;
 }
 
@@ -194,41 +212,16 @@ Creates a new Token where both its nextToken and values point to the
 pointer passed trough the parameters. Commonly used when the Token
 its is own Lexeme.
 */
-struct Token newTypeToken(char *type)
+struct Token *newTypeToken(char *type, struct MemBlock *mem)
 {
-	struct Token retval;
-	retval.type = type;
-	retval.value = type;
+	struct Token *retval = kimalloc(sizeof(struct Token), mem);
+	if (retval == NULL) {
+		return NULL;
+	}
+	retval->type = type;
+	retval->value = type;
+	retval->next = NULL;
 	return retval;
-}
-
-
-/*
-Frees all the memory used by a single Token. 
-*/
-void destroyToken(struct Token *ptr)
-{
-	if ((strcmp(ptr->type, DOUBLE_ID) == 0) ||
-		(strcmp(ptr->type, INTEGER_ID) == 0) ||
-		(strcmp(ptr->type, STRING_ID) == 0) ||
-		(strcmp(ptr->type, CONST_STRING_ID) == 0)) {
-		free(ptr->value);
-	}
-}
-
-/*
-Frees all the memory used by the TokenStream. It just frees the
-pointers, not the values pointed to except where the nextToken has the
-nextToken of a built in datatype in which case it does free the
-char array the value points to (a copy of the original value).
-*/
-void destroyTokenStream(struct TokenStream *ptr)
-{
-	for (int x = 0; x < ptr->size; x++) {
-		destroyToken((ptr->tokens + x));
-	}
-	free(ptr->tokens);
-	free(ptr);
 }
 
 /*
@@ -236,113 +229,100 @@ Prints the TokenStream, used for debugging. Modes should be passed
 as ints. Mode one prints just the nextToken IDs, mode two prints just
 the nextToken values and mode three prints both IDs and their values.
 */
-void printTokenStream(struct TokenStream *ptr, char format)
+void printTokenStream(struct Token *ptr, char format)
 {
+	struct Token *tmphead;
+	tmphead = ptr;
 	if ((format == 1) || (format == '1')) {
 		format = 0;
-		for (int x = 0, y = 0; x < ptr->size; x++, y++) {
-			if (format == 12) {
+		while (ptr != NULL) {
+			printf("<TYPE: \"%s\"> ", ptr->type);
+			ptr = ptr->next;
+			format++;
+			if (format > 6) {
 				printf("\n");
 				format = 0;
 			}
-			printf("< %s > ", (ptr->tokens + x)->type);
-			format++;
 		}
 	}
 	else if ((format == 2) || (format == '2')) {
 		format = 0;
-		for (int x = 0, y = 0; x < ptr->size; x++, y++) {
-			if (format == 6) {
+		while (ptr != NULL) {
+			printf("<VALUE: \" %s \"> ", ptr->value);
+			ptr = ptr->next;
+			format++;
+			if (format > 5) {
 				printf("\n");
 				format = 0;
 			}
-			printf("< %s > ", (ptr->tokens + x)->value);
-			format++;
 		}
 	}
 	else if ((format == 3) || (format == '3')) {
 		format = 0;
-		for (int x = 0, y = 0; x < ptr->size; x++, y++) {
-			if (format == 4) {
+		while (ptr != NULL) {
+			printf("<TYPE: \"%s\" --- VALUE: \" %s \"> ",
+				ptr->type, ptr->value);
+			ptr = ptr->next;
+			format++;
+			if (format > 3) {
 				printf("\n");
 				format = 0;
 			}
-			printf("<TYPE: \"%s\"", (ptr->tokens + x)->type);
-			printf(" VALUE: %s > ", (ptr->tokens + x)->value);
-			format++;
 		}
 	}
+	ptr = tmphead;
 }
+
+/*
+Adds the node to the ending of the LinkedList
+*/
+void appendToken(struct Token **head, struct Token *node) {
+	if (*head == NULL) {
+		*head = node;
+	}
+	else if ((*head)->next == NULL) {
+		(*head)->next = node;
+	}
+	else {
+		struct Token *tmphead = *head;
+		while ((*head)->next != NULL) {
+			(*head) = (*head)->next;
+		}
+		(*head)->next = node;
+		(*head) = tmphead;
+	}
+}
+
 
 /*
 Tries to match a char stream of n size ONLY with the tokens found inside
 the tokenizer.
 */
-struct Token mem_tokenOnlyMatch(char *word, int wrdsize, 
+char *tokenOnlyMatch(char *word, int wrdsize, 
 	struct LinkList *tok)
 {
 	struct LinkList *tmphead = tok;
 	while (tok != NULL) {
 		if ((strncmp(tok->value, word, wrdsize) == 0) &&
 			(strlen(tok->value) == wrdsize))
-			return newTypeToken(tok->value);
+			return tok->value;
 		else
 			tok = tok->next;
 	}
 	tok = tmphead;
-	return newTypeToken(NO_MATCH_ERR);
-}
-
-
-/*
-Adds the token passed trough the parameters to the TokenStream. 
-This memory handles all necessary memory allocation. 
-*/
-void appendToken(struct TokenStream *stream,
-	struct Token value)
-{
-	stream->size++;
-	stream->tokens = realloc(stream->tokens, 
-		sizeof(struct Token) * stream->size);
-	*(stream->tokens + stream->size - 1) = value;
+	return NO_MATCH_ERR;
 }
 
 /*
 Starts lexing just one char and increases the size to be lexed by one
 with each iteration. If a match is found it still increases the size
-to be lexed by one. It stops until a match is no longer found. Once a 
-match is no longer found the last match to be found is consumed and
-the process starts all over again. This ensures that the consumed match
-is the biggest match possible. If no match is found and the size that
-is trying to be lexed is equal to the input size then the first char of
-the input is discarded and the process begins all over again until the
-starting index is the same as the input size. It also skips over any
-trailing whitespaces.
+to be lexed by one. It stops until a match is no longer found. Once a
+match is no longer found the last match to be found is consumed. If 
+memory allocation fails during the lexing a NULL pointer is returned 
+and the pointer inside the input is not moved.
 */
-struct TokenStream *mem_lexAll(struct KiwiInput *input,
-	struct LinkList *tok)
-{
-	struct TokenStream *stream = malloc(sizeof(struct TokenStream));
-	stream->size = 0;
-	stream->tokens = NULL;
-
-	struct Token token;
-	while (1) {
-		token = mem_lexNext(input, tok);
-		if (strcmp(token.type, EOF_ID) != 0) 
-			appendToken(stream, token);
-		else
-			return stream;
-	}
-	return stream;
-	
-}
-
-/*Returns the next match found inside the text passed trough the 
-paremeters. Updates the char pointer and readsize inside KiwiInput
-accordingly.*/      
-struct Token mem_lexNext(struct KiwiInput *input,
-	struct LinkList *tokenizer)
+struct Token *lexNext(struct KiwiInput *input,
+	struct LinkList *tokenizer, struct MemBlock *mem)
 {
 	/*
 	0x00 means there is no match.
@@ -351,29 +331,37 @@ struct Token mem_lexNext(struct KiwiInput *input,
 	*/
 	unsigned char matchflag = 0x00;
 	unsigned int nsize = 1;
-	struct Token nextToken;
-	struct Token prevToken;
+	char *nextToken;
+	char *prevToken = NULL;
+	struct Token *retval;
 		
 	while (1) {
 		if (nsize > input->textSize - input->readSize) {
 			if (input->textSize - input->readSize <= 0) {
-				return newTypeToken(EOF_ID);
+				return newTypeToken(EOF_ID, mem);
 			}
 			if (input->textSize - input->readSize == 1) {
 				if (matchflag != 0x00) {
 					if (matchflag == 0xAA) {
+						retval = newTypeToken(prevToken, mem);
+						if (retval == NULL) {
+							return NULL;
+						}
 						input->readSize++;
 						input->text++;
-						return prevToken;
+						return newTypeToken(prevToken, mem);
 					}
 					if (matchflag == 0xFF) {
-						prevToken =  newValToken(prevToken.type,
-							input->text, 1);
+						retval = newValToken(prevToken,
+							input->text, 1, mem);
+						if (retval == NULL) {
+							return NULL;
+						}
 						input->readSize++;
 						input->text++;
-						return prevToken;
+						return retval;
 					}
-					return newTypeToken(EOF_ID);
+					return newTypeToken(EOF_ID, mem);
 				}
 			}
 			else {
@@ -382,15 +370,21 @@ struct Token mem_lexNext(struct KiwiInput *input,
 				nsize = 1;
 			}
 		}
-		nextToken = mem_tokenOnlyMatch(input->text, nsize, tokenizer);
-		if (strcmp(nextToken.type, NO_MATCH_ERR) != 0) {
+		nextToken = tokenOnlyMatch(input->text, nsize, tokenizer);
+		if (nextToken == NULL) {
+			return NULL;
+		}
+		if (strcmp(nextToken, NO_MATCH_ERR) != 0) {
 			matchflag = 0xAA;
 			prevToken = nextToken;
 			nsize++;
 			continue;
 		}
 		nextToken = builtInMatch(input->text, nsize);
-		if (strcmp(nextToken.type, NO_MATCH_ERR) != 0) {
+		if (nextToken == NULL) {
+			return NULL;
+		}
+		if (strcmp(nextToken, NO_MATCH_ERR) != 0) {
 			matchflag = 0xFF;
 			prevToken = nextToken;
 			nsize++;
@@ -403,22 +397,50 @@ struct Token mem_lexNext(struct KiwiInput *input,
 	}
 	if (matchflag == 0xAA) {
 		int len = nsize - 1;
+		retval = newTypeToken(prevToken, mem);
+		if (retval == NULL) {
+			return NULL;
+		}
 		input->text += len;
 		input->readSize += len;
 		len = skipWhiteSpace(&(input->text),
 			input->textSize - input->readSize);
 		input->readSize += len;
-		return prevToken;
+		return retval;
 	}
 	else if (matchflag == 0xFF) {
 		int len = nsize - 1;
-		prevToken = newValToken(prevToken.type, input->text, len);
+		retval = newValToken(prevToken, input->text, len, mem);
+		if (retval == NULL) {
+			return NULL;
+		}
 		input->text += len;
 		input->readSize += len;
 		len = skipWhiteSpace(&(input->text),
 			input->textSize - input->readSize);
 		input->readSize += len;
-		return prevToken;
+		return retval;
 	}
-	return newTypeToken(EOF_ID);
+	return newTypeToken(EOF_ID, mem);
+}
+
+/*
+Lexes the whole input by repeteadly calling "lexNext
+*/
+struct Token *lexAll(struct KiwiInput *input,
+	struct LinkList *tok, struct MemBlock *mem)
+{
+	struct Token *head = NULL;
+	struct Token *token;
+	while (1) {
+		token = lexNext(input, tok, mem);
+		if (token == NULL) {
+			return head;
+		}
+		if ((strcmp(token->type, EOF_ID) != 0) && 
+			(strcmp(token->type, NO_MATCH_ERR) != 0))
+			appendToken(&head, token);
+		else
+			return head;
+	}
 }

@@ -15,6 +15,8 @@ extern char *MIX_STRING_ID;
 extern char *NO_MATCH_ERR;
 extern char *EOF_ID;
 
+extern char **BUILT_IN_TYPES[];
+
 #define DOUBLE_TYPE 2
 #define INT_TYPE 1
 
@@ -27,11 +29,7 @@ struct KiwiInput {
 struct Token {
 	char *type;
 	char *value;
-};
-
-struct TokenStream {
-	struct Token *tokens;
-	int size;
+	struct Token *next;
 };
 
 /*
@@ -40,22 +38,22 @@ Memory independent functions.
 int isNumber(char *val, int size);
 int isString(char *val, int size);
 int isLiteral(char *val, int size);
+char *builtInMatch(char *value, int size);
 
 int skipWhiteSpace(char **str, int limit);
 
-struct Token newToken(char *type, char *value);
-struct Token newValToken(char *type, char *value, int valsize);
-struct Token newTypeToken(char *type);
-void destroyToken(struct Token *token);
-void destroyTokenStream(struct TokenStream *token);
-void printTokenStream(struct TokenStream *token, char format);
-void appendToken(struct TokenStream *stream, struct Token value);
+struct Token *newToken(char *type, char *value, struct MemBlock *mem);
+struct Token *newValToken(char *type, char *value, int valsize,
+	struct MemBlock *mem);
+struct Token *newTypeToken(char *type, struct MemBlock *mem);
+void printTokenStream(struct Token *token, char format);
+void appendToken(struct Token **head, struct Token *node);
 
-struct Token mem_tokenOnlyMatch(char *word, int wrdize, 
+char *tokenOnlyMatch(char *word, int wrdize, 
 	struct LinkList *tokenizer);
-struct TokenStream *mem_lexAll(struct KiwiInput *input,
-	struct LinkList *tok);
-struct Token mem_lexNext(struct KiwiInput *input,
-	struct LinkList *tokenizer);
+struct Token *lexNext(struct KiwiInput *input,
+	struct LinkList *tokenizer, struct MemBlock *mem);
+struct Token *lexAll(struct KiwiInput *input,
+	struct LinkList *tok, struct MemBlock *mem);
 
 #endif

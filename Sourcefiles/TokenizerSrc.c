@@ -1,16 +1,5 @@
 #include "Tokenizer.h"
 
-struct MemBlock lexMem;
-
-/*Initializes the statically allocated memory block so that it 
-can replace any dynamic allocation memory.*/
-void initTokenizerMemory(char *ptr, size_t size)
-{
-	lexMem.memory = ptr;
-	lexMem.memsize = size;
-	lexMem.used = 0;
-}
-
 char *readAll(FILE *fl, unsigned int *sizeread, int sector)
 {
 	char *rdata = NULL;
@@ -36,18 +25,24 @@ int skipchar(char *ptr, char until, int limit)
 	return x;
 }
 
-struct LinkList *mem_newLinkToken(char *id, int idsize)
+struct LinkList *mem_newLinkToken(char *id, int idsize, 
+	struct MemBlock *mem)
 {
 	struct LinkList *retval = kimalloc(sizeof(struct LinkList),
-		&lexMem);
-	retval->value = kicalloc(sizeof(char) * (idsize + 1), &lexMem);
+		mem);
+	if (retval == NULL)
+		return NULL;
+	retval->value = kicalloc(sizeof(char) * (idsize + 1), mem);
+	if (retval->value == NULL)
+		return NULL;
 	memcpy(retval->value, id, idsize);
 	retval->next = NULL;
 	return retval;
 }
 
 
-struct LinkList *mem_createTokenizer(char *grammar, int gramsize)
+struct LinkList *mem_createTokenizer(char *grammar, int gramsize,
+	struct MemBlock *mem)
 {
 	struct LinkList *retval = NULL;
 	int x = 0; 
@@ -56,10 +51,12 @@ struct LinkList *mem_createTokenizer(char *grammar, int gramsize)
 			grammar++;
 			x++;
 			int len = skipchar(grammar, TOKEN_LIMIT, gramsize - x);
-			struct LinkList *tok = mem_newLinkToken(grammar, len);
+			struct LinkList *tok = mem_newLinkToken(grammar, len, mem);
 			len++; 
 			x += len;
 			grammar += len;
+			if (tok == NULL)
+				return retval;
 			appendToList(tok, &retval);
 		}
 	}
