@@ -26,33 +26,29 @@ exit --> Exits the shell.\n"
 #define PRNT_LEX_CMD "printlex"
 #define EXIT_CMD "exit"
 
-
 #define BUF_SIZE 156
-#define TOK_MEM_SIZE 1440
-#define LEX_MEM_SIZE 4096
-#define PARS_MEM_SIZE 4096
-#define PARS_BUF_MEM_SIZE 4096
+#define TOK_SIZE 1440
+#define LEX_TOK_SIZE 2048
+#define PARSE_SIZE 4096
 
 static char input[BUF_SIZE];
 
-static char tokmemory[TOK_MEM_SIZE];
+static char tokmemory[TOK_SIZE];
 static struct MemBlock tokmem;
 static struct LinkList *mem_tokenizer = NULL;
 
-static char lexmemory[LEX_MEM_SIZE];
+static char lexmemory[LEX_TOK_SIZE];
 static struct MemBlock lexmem;
-static struct Token *tokenStream = NULL;
+static char symbolmemory[LEX_TOK_SIZE];
+static struct MemBlock symbolmem;
 
-static char parsememory[PARS_MEM_SIZE];
+static struct TokenArray *tokens;
+
+static char parsememory[PARSE_SIZE];
 static struct MemBlock parsmem;
 static struct LinkList *parser;
 
-static char parsebufmemory[PARS_BUF_MEM_SIZE];
-static struct MemBlock parsbufmem;
-
-static char test[6];
-static struct MemBlock testmem;
-
+static struct KiwiInput kiwiinput;
 
 void getInput(void);
 void clearscr(void);
@@ -61,10 +57,10 @@ char *readfile(char *filename, unsigned int *fsize, int sector);
 
 void main()
 {
-	tokmem = initMemory(tokmemory, TOK_MEM_SIZE);	
-	lexmem = initMemory(lexmemory, LEX_MEM_SIZE);
-	parsmem = initMemory(parsememory, PARS_MEM_SIZE);
-	parsbufmem = initMemory(parsebufmemory, PARS_BUF_MEM_SIZE);
+	tokmem = initMemory(tokmemory, TOK_SIZE);	
+	lexmem = initMemory(lexmemory, LEX_TOK_SIZE);
+	symbolmem = initMemory(symbolmemory, LEX_TOK_SIZE);
+	parsmem = initMemory(parsememory, PARSE_SIZE);
 	printf(INIT_MSG);
 	while (1) {
 		getInput();
@@ -91,30 +87,29 @@ void main()
 				printf(NO_DATA_MSG);
 		}
 		else if (strncmp(input, LEX_CMD, strlen(LEX_CMD)) == 0) {
-			if (tokenStream != NULL) {
+			if (tokens != NULL) {
 				freeMemory(&lexmem);
-				tokenStream = NULL;
+				tokens = NULL;
 			}
 			clock_t initTime = clock();
 			unsigned int size = 0;
 			char *lex = readfile(input + strlen(LEX_CMD), &size, 256);
 			if (lex != NULL) {
-				struct KiwiInput input;
-				input.text = lex;
-				input.textSize = size;
-				input.readSize = 0;
+				kiwiinput.text = lex;
+				kiwiinput.textSize = size;
+				kiwiinput.readSize = 0;
 			    printf("\nLexing file... %u bytes read.\n", size);
-				tokenStream = lexAll(&input, mem_tokenizer, &lexmem);
+				tokens = lexAll(&kiwiinput, mem_tokenizer, &lexmem, 
+					&symbolmem);
 				clock_t stopTime = clock();
 				printf("Lexing completed. Took: %f seconds.\n",
 					(double)(stopTime - initTime) / CLOCKS_PER_SEC);
-				free(lex);
 			}
 		}
 		else if (strncmp(input, PRNT_LEX_CMD, strlen(PRNT_LEX_CMD)) == 0) {
-			if (tokenStream != NULL) {
+			if (tokens != NULL) {
 				printf("\n");
-				printTokenStream(tokenStream, *(input + strlen(PRNT_LEX_CMD)));
+				printTokenStream(tokens, *(input + strlen(PRNT_LEX_CMD)));
 				printf("\n");
 			}
 			else
@@ -158,8 +153,8 @@ void clearscr()
 }
 
 void freeptr() {
-	if (tokenStream != NULL) {
-		tokenStream = NULL;
+	if (tokens != NULL) {
+		tokens = NULL;
 		freeMemory(&lexmem);
 	}
 	if (mem_tokenizer != NULL) {

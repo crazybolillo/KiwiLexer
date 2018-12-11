@@ -58,7 +58,7 @@ void freeMemory(struct MemBlock *mem)
 /*
 Frees the last element that was allocated.
 */
-void popMemory(struct MemBlock *mem, size_t size)
+void popMemory(size_t size, struct MemBlock *mem)
 {
 	if ((size > mem->memsize) || (size > mem->used)) {
 		freeMemory(mem);

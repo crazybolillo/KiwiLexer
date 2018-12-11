@@ -12,6 +12,6 @@ struct MemBlock initMemory(char *ptr, size_t size);
 void *kimalloc(size_t size, struct MemBlock *mem);
 void *kicalloc(size_t size, struct MemBlock *mem);
 void freeMemory(struct MemBlock *mem);
-void popMemory(struct MemBlock *mem, size_t size);
+void popMemory(size_t size, struct MemBlock *mem);
 
 #endif
