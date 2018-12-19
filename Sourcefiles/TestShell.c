@@ -1,6 +1,7 @@
 #include "Tokenizer.h"
 #include "Lexer.h"
 #include <time.h>
+#include <stdio.h>
 
 #define CLEAR_COMAND "clear"
 
@@ -28,8 +29,9 @@ exit --> Exits the shell.\n"
 
 #define BUF_SIZE 156
 #define TOK_SIZE 1440
-#define LEX_TOK_SIZE 2048
-#define PARSE_SIZE 4096
+#define LEX_TOK_SIZE 5120
+#define LEX_SYM_SIZE 1024
+#define PARSE_SIZE 2048
 
 static char input[BUF_SIZE];
 
@@ -39,16 +41,15 @@ static struct LinkList *mem_tokenizer = NULL;
 
 static char lexmemory[LEX_TOK_SIZE];
 static struct MemBlock lexmem;
-static char symbolmemory[LEX_TOK_SIZE];
+static char symbolmemory[LEX_SYM_SIZE];
 static struct MemBlock symbolmem;
-
 static struct TokenArray *tokens;
 
 static char parsememory[PARSE_SIZE];
 static struct MemBlock parsmem;
 static struct LinkList *parser;
 
-static struct KiwiInput kiwiinput;
+static struct KiwiInput fileinput;
 
 void getInput(void);
 void clearscr(void);
@@ -57,10 +58,10 @@ char *readfile(char *filename, unsigned int *fsize, int sector);
 
 void main()
 {
-	tokmem = initMemory(tokmemory, TOK_SIZE);	
-	lexmem = initMemory(lexmemory, LEX_TOK_SIZE);
-	symbolmem = initMemory(symbolmemory, LEX_TOK_SIZE);
-	parsmem = initMemory(parsememory, PARSE_SIZE);
+	initMemory(&tokmem, tokmemory, TOK_SIZE);	
+	initMemory(&lexmem, lexmemory, LEX_TOK_SIZE);
+	initMemory(&symbolmem, symbolmemory, LEX_SYM_SIZE);
+	initMemory(&parsmem, parsememory, PARSE_SIZE);
 	printf(INIT_MSG);
 	while (1) {
 		getInput();
@@ -72,7 +73,7 @@ void main()
 			int size = 0;
 			char *alphabet = readfile(input + strlen(TOKEN_CMD), &size, 256);
 			if (alphabet != NULL) {
-				mem_tokenizer = mem_createTokenizer(alphabet, size,
+				mem_tokenizer = newAlphabet(alphabet, size,
 					&tokmem);
 				free(alphabet);
 			}
@@ -80,7 +81,7 @@ void main()
 		else if (strncmp(input, PRNT_TOK_CMD, strlen(input)) == 0) {
 			if (mem_tokenizer != NULL) {
 				printf("\n");
-				mem_printTokenizer(mem_tokenizer);
+				printAlphabet(mem_tokenizer);
 				printf("\n");
 			}
 			else
@@ -95,14 +96,15 @@ void main()
 			unsigned int size = 0;
 			char *lex = readfile(input + strlen(LEX_CMD), &size, 256);
 			if (lex != NULL) {
-				kiwiinput.text = lex;
-				kiwiinput.textSize = size;
-				kiwiinput.readSize = 0;
+				fileinput.text = lex;
+				fileinput.textSize = size;
+				fileinput.readSize = 0;
 			    printf("\nLexing file... %u bytes read.\n", size);
-				tokens = lexAll(&kiwiinput, mem_tokenizer, &lexmem, 
+				tokens = lexAll(&fileinput, mem_tokenizer, &lexmem, 
 					&symbolmem);
 				clock_t stopTime = clock();
-				printf("Lexing completed. Took: %f seconds.\n",
+				printf("Lexing completed. %d tokens generated\
+Took: %f seconds.\n", tokens->size, 
 					(double)(stopTime - initTime) / CLOCKS_PER_SEC);
 			}
 		}

@@ -1,19 +1,12 @@
 #ifndef DATA_HEADER_GUARD
 #define DATA_HEADER_GUARD
 
-#include <stdio.h>
 #include <stdlib.h>
 #include "Memory.h"
 
 struct LinkList {
 	void *value;
 	struct LinkList *next;
-};
-
-struct NestLinkList {
-	void *value;
-	struct NestLinkList *next;
-	struct LinkList *nestval;
 };
 
 struct LinkList *newLinkList(void *value, struct MemBlock *mem);

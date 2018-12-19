@@ -1,83 +1,174 @@
 #include "Parser.h"
 
-char *PARSE_ERR = "KPER";
 char *PROD_SIGNAL = "->";
 char *PROD_END = ";";
 
-struct NestLinkList *newProHead(char *prodname, int namesize, struct
+/*
+Creates the head for the production. This involves allocating the string
+that should be returned whenever the rules for this production are met
+during parsing. 
+*/
+struct Production *newProHead(char *prodname, int namesize, struct
 	MemBlock *mem)
 {
-	struct NestLinkList *retval = kimalloc(sizeof(struct NestLinkList),
+	struct Production *retval = kimalloc(sizeof(struct Production),
 		mem);
 	if (retval == NULL) {
 		return NULL;
 	}
-	retval->value = kicalloc(sizeof(char) * namesize + 1, mem);
-	if (retval->value == NULL) {
-		popMemory(sizeof(struct NestLinkList), mem);
+	retval->name = kicalloc(sizeof(char) * namesize + 1, mem);
+	if (retval->name == NULL) {
+		popMemory(sizeof(struct Production), mem);
 		return NULL;
 	}
-	memcpy(retval->value, prodname, namesize);
+	memcpy(retval->name, prodname, namesize);
 	retval->next = NULL;
-	retval->nestval = NULL;
+	retval->rules = NULL;
 	return retval;
 }
 
-struct LinkList *newProdRule(char *type, int typesz,
-	struct LinkList *tokenizer, struct MemBlock *mem)
+/*Tries to add a new rule to the memory block. Returns zero if it was
+not able to do it and non-zero if it was able to do so.*/
+inline int addRule(char *val, struct MemBlock *mem, 
+	struct Production *prod)
 {
-	struct LinkList *retval = kimalloc(sizeof(struct LinkList),
-		mem);
-	if (retval == NULL) {
-		return NULL;
+	char **ptr = kimalloc(sizeof(char *), mem);
+	if (ptr == NULL) {
+		return 0;
 	}
-	retval->value = contains(type, typesz, tokenizer);
-	if (retval->value == NULL) {
-		freeMemory(mem);
-		return NULL;
+	else {
+		*ptr = val;
+		prod->rulesize++;
+		return 1;
 	}
-	retval->next = NULL;
-	return retval;
 }
 
-struct NestLinkList *newProduction(struct KiwiInput *input,
-	struct LinkList *tokenizer, struct MemBlock *mem)
+/*
+Creates a new production with its rules. 
+*/
+struct Production *newProduction(struct KiwiInput *input,
+	struct LinkList *tokenizer, struct MemBlock *parsemem,
+	struct MemBlock *lexmem)
 {
-	struct NestLinkList *retval;
-	struct LinkList *gramhead = NULL;
-	struct LinkList *gram;
+	struct Production *retval;
+	char *gramptr;
+	int appendres;
+	struct Token token;
 
-	struct Token token = lexNext(input, tokenizer, mem);
+	token = lexNext(input, tokenizer, lexmem);
 	if (strcmp(token.type, CONST_STRING_ID) != 0) {
 		return NULL;
 	}
-	retval = newProHead(token.value, strlen(token.value), mem);
+
+	retval = newProHead(token.value, strlen(token.value), parsemem);
 	if (retval == NULL) {
 		return NULL;
 	}
-	retval->nestval = gramhead;
+	retval->rules = (char *)parsemem->memory;
 
-	token = lexNext(input, tokenizer, mem);
+	token = lexNext(input, tokenizer, lexmem);
 	if (strcmp(token.type, PROD_SIGNAL) != 0) {
-		freeMemory(mem);
+		freeMemory(parsemem);
 		return NULL;
 	}
 	while(1) {
-		token = lexNext(input, tokenizer, mem);
-		if (strcmp(token.type, CONST_STRING_ID) == 0) {
-			gram = newLinkList(token.type, mem);
-			if (gram == NULL) {
+		token = lexNext(input, tokenizer, lexmem);
+		gramptr = nul_alphabetContains(token.type, tokenizer);
+		if (gramptr != NULL) {
+			appendres = addRule(gramptr, parsemem, retval);
+			if (appendres == 0)
+				return NULL;
+		}
+		for (uint8_t x = 0; x < BUILT_IN_AMNT; x++) {
+			if (strcmp(*BUILT_IN_TYPES[x], token.type) == 0) {
+				appendres = addRule(*BUILT_IN_TYPES[x], parsemem,
+					retval);
+				if (appendres == 0)
+					return NULL;
+			}
+			else if (strcmp(token.type, PROD_END) == 0) {
 				return retval;
 			}
-			appendToList(gram, &gramhead);
-		}
-		else if (strcmp(token.type, PROD_END) == 0) {
-			popMemory(sizeof(struct Token), mem);
-			return retval;
-		}
-		else {
-			freeMemory(mem);
-			return NULL;
+			else {
+				return NULL;
+			}
 		}
 	}
+}
+
+/*
+Adds the production into the LinkedList structure. It appends it to the
+list so that the matching hierarchy works as in the written file. 
+(Whenever there are two possible productions the first one to be 
+declared on the file will be the one chosen).
+*/
+inline void addProduction(struct Production **head,
+	struct Production *node)
+{
+	if (*head == NULL) {
+		*head = node;
+	}
+	struct Production *tmphead = *head;
+	while ((*head)->next != NULL) {
+		*head = (*head)->next;
+	}
+	(*head)->next = node;
+	*head = tmphead;
+}
+
+/*Parses all productions and returns the head of the linked list
+containing all productions and their rules. Returns NULL if it failed.
+*/
+struct Production *newParser(struct KiwiInput *input,
+	struct LinkList *alphabet, struct MemBlock *parsemem,
+	struct MemBlock *lexmem)
+{
+	struct Production *prodhead;
+	struct Production *nexthead;
+
+	prodhead = newProduction(input, alphabet, parsemem, lexmem);
+	if (prodhead == NULL)
+		return NULL;
+	while (1) {
+		nexthead = newProduction(input, alphabet, parsemem, lexmem);
+		if (nexthead == NULL) {
+			return prodhead;
+		}
+		else {
+			addProduction(&prodhead, nexthead);
+		}
+	}
+}
+
+/*
+Compares the array of tokens with all the diferent productions inside
+the parser and returns the production name and its size in tokens.
+Bigger productions are preffered over smaller ones so if a match has
+been already been found and the next production has less lexemes
+or components it will be skipped(not analyzed). Productions that appear
+first have precedence over productions later on inside the Parser 
+(a LinkedList)
+*/
+struct Match parseNext(struct Production *parser, 
+	struct TokenArray *tokens)
+{
+	uint8_t matchsize = 0;
+	char *prodname = NULL;
+	struct Production *tmphead = parser;
+	while (parser != NULL) {
+		if ((matchsize > parser->rulesize) || 
+			(parser->rulesize > tokens->size)) {
+			for (uint8_t x = 0; x < parser->rulesize; x++) {
+				if (strcmp(*(parser->rules + x), tokens->token + x) != 0)
+					break;
+			}
+		}
+		parser = parser->next;
+	}
+	parser = tmphead;
+
+	struct Match retval;
+	retval.id = prodname;
+	retval.size = matchsize;
+	return retval;
 }

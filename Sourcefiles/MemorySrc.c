@@ -1,12 +1,10 @@
 #include "Memory.h"
 
-struct MemBlock initMemory(char *ptr, size_t size)
+void initMemory(struct MemBlock *mem, char *ptr, size_t size)
 {
-	struct MemBlock retval;
-	retval.memory = ptr;
-	retval.memsize = size;
-	retval.used = 0;
-	return retval;
+	mem->memory = ptr;
+	mem->memsize = size;
+	mem->used = 0;
 }
 
 /*
@@ -55,6 +53,12 @@ void freeMemory(struct MemBlock *mem)
 	mem->used = 0;
 }
 
+void freeCleanMemory(struct MemBlock *mem)
+{
+	memset(mem->memory, 0x00, mem->used);
+	freeMemory(mem);
+}
+
 /*
 Frees the last element that was allocated.
 */
@@ -64,7 +68,7 @@ void popMemory(size_t size, struct MemBlock *mem)
 		freeMemory(mem);
 	}
 	else if (size > 0) {
-		mem->memory -= (size + 1);
+		mem->memory -= size;
 		mem->used -= size;
 	}
 }

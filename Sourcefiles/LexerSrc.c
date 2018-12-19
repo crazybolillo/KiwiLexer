@@ -11,8 +11,8 @@ char *EOF_ID = "KEOF";
 /*Can't  use "char *BUILT_IN_TYPES[]" because apparently the
 corresponding values arent constant enough so I use 
 memory adresses instead which somehow are more constant.*/
-char **BUILT_IN_TYPES[] = {&DOUBLE_ID, &INTEGER_ID, &STRING_ID,
- &CONST_STRING_ID, &ERR_ID, &EOF_ID};
+char **BUILT_IN_TYPES[BUILT_IN_AMNT] = 
+{&DOUBLE_ID, &INTEGER_ID, &STRING_ID, &CONST_STRING_ID};
 
 /*
 Checks whether a stream of characters of n size is 
@@ -181,7 +181,7 @@ struct Token newToken(char *type, char *value)
 }
 
 /*
-Creates a new Token where the values of the value ptr ARE COPIED 
+Creates a new Token where the values of the name ptr ARE COPIED 
 (memcpy) and the type of the token just points to the one passed 
 trough the parameters.
 */
@@ -224,7 +224,7 @@ void printTokenStream(struct TokenArray *ptr, char format)
 	if ((format == 1) || (format == '1')) {
 		format = 0;
 		for (unsigned int x = 0; x < ptr->size; x++, format++) {
-			printf("<TYPE: \"%s\">", (ptr->token + x)->type);
+			printf("<TYPE: \"%s\"> ", (ptr->token + x)->type);
 			if (format > 6) {
 				printf("\n");
 				format = 0;
@@ -234,7 +234,7 @@ void printTokenStream(struct TokenArray *ptr, char format)
 	else if ((format == 2) || (format == '2')) {
 		format = 0;
 		for (unsigned int x = 0; x < ptr->size; x++, format++) {
-			printf("<VALUE: %s >", (ptr->token + x)->value);
+			printf("<VALUE: %s > ", (ptr->token + x)->value);
 			if (format > 4) {
 				printf("\n");
 				format = 0;
@@ -244,7 +244,7 @@ void printTokenStream(struct TokenArray *ptr, char format)
 	else if ((format == 3) || (format == '3')) {
 		format = 0;
 		for (unsigned int x = 0; x < ptr->size; x++, format++) {
-			printf("<TYPE: \"%s\" VALUE: %s >",
+			printf("<TYPE: \"%s\" VALUE: %s > ",
 				(ptr->token + x)->type, (ptr->token + x)->value);
 			if (format > 3) {
 				printf("\n");
@@ -274,24 +274,27 @@ Iterates troughout the symbol table to see if the symbol has already
 been allocated in memory. If it has been allocated in memory it 
 returns a pointer to the first element (char) of the symbol (string). 
 Strings are NUL terminated and the end of valid strings is signaled
-by two NUL (0x00) characters one after the other.
+by two NUL (0x00) characters one after the other. If the symbol has
+not been allocated it returns NULL.
 */
-char *symbolTableContains(char *value, int size, struct MemBlock *mem) 
+char *symbolTableContains(char *value, size_t size, struct MemBlock *mem) 
 {
 	if (mem->used == 0) {
 		return NULL;
 	}
+	char *limit = mem->memory + ((mem->memsize - mem->used) - 1);
 	char *string = mem->memory - mem->used;
 	if (*string == 0x00) {
 		return NULL;
 	}
 	char *lookahead = string;
-	int x = 0;
+	size_t x = 0;
 	while(1){
-		for (; x < size; x++, lookahead++, value++) {
+		for (; (x < size) && (lookahead <= limit);
+			x++, lookahead++, value++) {
 			if (*lookahead != *value) {
-				SKIP_TIL_NUL(lookahead);
-				if (*(lookahead + 1) == 0x00) {
+				SKIP_NULL_LIMIT(lookahead, limit);
+				if (NULL_OR_LIMIT(value, limit)) {
 					return NULL;
 				}
 				else {
@@ -303,12 +306,12 @@ char *symbolTableContains(char *value, int size, struct MemBlock *mem)
 				}
 			}
 		}
-		if (*(lookahead + 1) == 0x00) {
+		if (*lookahead == 0x00) {
 			return string;
 		}
 		else {
-			SKIP_TIL_NUL(lookahead);
-			if (*(lookahead + 1) == 0x00) {
+			SKIP_NULL_LIMIT(lookahead, limit);
+			if (NULL_OR_LIMIT(lookahead, limit)) {
 				return NULL;
 			}
 			else {
@@ -348,7 +351,7 @@ with each iteration. If a match is found it still increases the size
 to be lexed by one. It stops until a match is no longer found. Once a
 match is no longer found the last match to be found is consumed. If 
 memory allocation fails during the lexing a NULL pointer is returned 
-and the pointer inside the input is not moved.
+and the token is not consumed.
 */
 struct Token lexNext(struct KiwiInput *input,
 	struct LinkList *tokenizer, struct MemBlock *mem)
@@ -435,7 +438,7 @@ struct Token lexNext(struct KiwiInput *input,
 }
 
 /*
-Lexes the whole input by repeteadly calling "lexNext
+Lexes the whole input by repeteadly calling "lexNext". 
 */
 struct TokenArray *lexAll(struct KiwiInput *input,
 	struct LinkList *tok, struct MemBlock *tokenmem, 
@@ -446,11 +449,12 @@ struct TokenArray *lexAll(struct KiwiInput *input,
 	if (retval == NULL) {
 		return NULL;
 	}
-	retval->token = tokenmem->memory;
-	/*if (retval->token == NULL) {
-		return NULL;
-	}
-	popMemory(sizeof(struct Token), tokenmem);*/
+	/*The rest of tokenmem will work as the array of tokens. The
+	beginning of the array will be the current pointer inside the
+	memory block. Memory could be requested and then popped to 
+	get a reference to the beginning of the array but this method
+	is faster.*/
+	retval->token = (struct Token *)tokenmem->memory;
 	struct Token token;
 	char append;
 	while (1) {

@@ -25,7 +25,7 @@ int skipchar(char *ptr, char until, int limit)
 	return x;
 }
 
-struct LinkList *mem_newLinkToken(char *id, int idsize, 
+struct LinkList *newLexeme(char *id, int idsize, 
 	struct MemBlock *mem)
 {
 	struct LinkList *retval = kimalloc(sizeof(struct LinkList),
@@ -41,7 +41,7 @@ struct LinkList *mem_newLinkToken(char *id, int idsize,
 }
 
 
-struct LinkList *mem_createTokenizer(char *grammar, int gramsize,
+struct LinkList *newAlphabet(char *grammar, int gramsize,
 	struct MemBlock *mem)
 {
 	struct LinkList *retval = NULL;
@@ -51,7 +51,7 @@ struct LinkList *mem_createTokenizer(char *grammar, int gramsize,
 			grammar++;
 			x++;
 			int len = skipchar(grammar, TOKEN_LIMIT, gramsize - x);
-			struct LinkList *tok = mem_newLinkToken(grammar, len, mem);
+			struct LinkList *tok = newLexeme(grammar, len, mem);
 			len++; 
 			x += len;
 			grammar += len;
@@ -67,7 +67,7 @@ struct LinkList *mem_createTokenizer(char *grammar, int gramsize,
 Returns a pointer to the string inside the tokenizer if it exists
 or NULL if it does not.
 */
-char *contains(char *val, int valsz, struct LinkList *tokenizer)
+char *alphabetContains(char *val, int valsz, struct LinkList *tokenizer)
 {
 	struct LinkList *tmphead = tokenizer;
 	char *retval;
@@ -78,13 +78,29 @@ char *contains(char *val, int valsz, struct LinkList *tokenizer)
 			tokenizer = tmphead;
 			return retval;
 		}
-			
+		tokenizer = tokenizer->next;
 	}
 	tokenizer = tmphead;
 	return NULL;
 }
 
-void mem_printTokenizer(struct LinkList *head)
+char *nul_alphabetContains(char *str, struct LinkList *tokenizer)
+{
+	struct LinkList *tmphead = tokenizer;
+	char *retval;
+	while(tokenizer != NULL) {
+		if (strcmp(tokenizer->value, str) == 0) {
+			retval = tokenizer->value;
+			tokenizer = tmphead;
+			return retval;
+		}
+		tokenizer = tokenizer->next;
+	}
+	tokenizer = tmphead;
+	return NULL;
+}
+
+void printAlphabet(struct LinkList *head)
 {
 	struct LinkList *tmphead = head;
 	char prntcount = 0;
