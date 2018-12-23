@@ -1,15 +1,17 @@
 #include "Tokenizer.h"
 #include "Lexer.h"
+#include "Parser.h"
 #include <time.h>
 #include <stdio.h>
 
 #define CLEAR_COMAND "clear"
-
 #if defined(_WIN32) || defined(_WIN64)
     #undef CLEAR_COMAND
 	#define CLEAR_COMAND "cls"
 #endif
 
+#define INIT_ERROR "I CAN'T CODE. ERROR WHILE INITAITING SHELL.\
+PLEASE FIX ME"
 #define INIT_MSG "KiwiLexer Testing Shell. \"help\" will show available commands.\n"
 #define HELP_MSG "\ntokenize --> Reads an alphabet from the text file and loads it into memory.\n\
 print tok --> Prints the current alphabet.\n\
@@ -27,29 +29,61 @@ exit --> Exits the shell.\n"
 #define PRNT_LEX_CMD "printlex"
 #define EXIT_CMD "exit"
 
-#define BUF_SIZE 156
+/*Oh boy...*/
+#define MEM_DECL(name, memname, size) char name[size]; \
+struct MemBlock memname;
+
+/*Memory blocks that will be used troughout the application are
+declared here. The memory blocks used by the test shell itself to 
+parse commands are all prefixed by "dev_". All the other memory
+blocks are used to lex and parse user files.*/
+#define DEV_TOK_SIZE 128
+#define DEV_LEX_SIZE 128
+#define DEV_PARS_SIZE 256
+#define BUF_SIZE 128
+
+/*All shell commands*/
+char *shellalph = "\"tokenize\" \"lex\" \"printtok\" \"printlex\"";
+
+/*Productions for the shell commands.*/
+char *parsetxt = "alph->tokenize, CONST_STR; lex->lex, CONST_STR; \
+pralph->printtok; prlex->printlex, INT;";
+struct KiwiInput parseinput;
+
+/*Declares variables in an horrendous way with macros. It creates
+a char array with its identifier as the first argument and a 
+memory block (struct) to go with it with its identifier as the 
+second argument. The array's size is the third argument.*/
+MEM_DECL(dev_tokmemory, dev_tokmem, DEV_TOK_SIZE)
+struct LinkList *dev_tokenizer = NULL;
+
+MEM_DECL(dev_lexmemory, dev_lexmem, DEV_LEX_SIZE)
+MEM_DECL(dev_symbolmemory, dev_symmem, DEV_LEX_SIZE)
+struct TokenArray *dev_tokens;
+
+MEM_DECL(dev_parsmemory, dev_parsmem, DEV_PARS_SIZE)
+struct Production *dev_parser = NULL;
+
+char dev_input[BUF_SIZE];
+struct KiwiInput dev_inputkiwi;
+struct Match dev_parsematch;
+
 #define TOK_SIZE 1440
 #define LEX_TOK_SIZE 5120
 #define LEX_SYM_SIZE 1024
 #define PARSE_SIZE 2048
 
-static char input[BUF_SIZE];
+MEM_DECL(tokmemory, tokmem, TOK_SIZE)
+struct LinkList *mem_tokenizer = NULL;
 
-static char tokmemory[TOK_SIZE];
-static struct MemBlock tokmem;
-static struct LinkList *mem_tokenizer = NULL;
+MEM_DECL(lexmemory, lexmem, LEX_TOK_SIZE)
+MEM_DECL(symbolmemory, symbolmem, LEX_TOK_SIZE)
+struct TokenArray *tokens = NULL;
 
-static char lexmemory[LEX_TOK_SIZE];
-static struct MemBlock lexmem;
-static char symbolmemory[LEX_SYM_SIZE];
-static struct MemBlock symbolmem;
-static struct TokenArray *tokens;
+MEM_DECL(parsememory, parsmem, PARSE_SIZE)
+struct LinkList *parser = NULL;
 
-static char parsememory[PARSE_SIZE];
-static struct MemBlock parsmem;
-static struct LinkList *parser;
-
-static struct KiwiInput fileinput;
+struct KiwiInput fileinput;
 
 void getInput(void);
 void clearscr(void);
@@ -58,6 +92,33 @@ char *readfile(char *filename, unsigned int *fsize, int sector);
 
 void main()
 {
+	dev_inputkiwi.text = dev_input;
+
+	/*Initialize the shell memory blocks and its alphabet and parser.
+	Boilerplate warning.*/
+	initMemory(&dev_tokmem, dev_tokmemory, DEV_TOK_SIZE);
+	initMemory(&dev_lexmem, dev_lexmemory, DEV_TOK_SIZE);
+	initMemory(&dev_symmem, dev_symbolmemory, DEV_TOK_SIZE);
+	initMemory(&dev_parsmem, dev_parsmemory, DEV_TOK_SIZE);
+
+	dev_tokenizer = newAlphabet(shellalph, strlen(shellalph),
+		&dev_tokmem);
+	if (dev_tokenizer == NULL) {
+		printf("%s\n", INIT_ERROR);
+	}
+	else {}
+	parseinput.text = parsetxt;
+	parseinput.readSize = 0;
+	parseinput.textSize = strlen(parsetxt);
+	dev_parser = newParser(&parseinput, dev_tokenizer, &dev_parsmem,
+		&dev_symmem);
+	if (dev_parser == NULL) {
+		printf("%s\n", INIT_ERROR);
+	}
+	else {}
+
+	/*Initialize memory blocks that will be used when lexing and
+	parsing the test input.*/
 	initMemory(&tokmem, tokmemory, TOK_SIZE);	
 	initMemory(&lexmem, lexmemory, LEX_TOK_SIZE);
 	initMemory(&symbolmem, symbolmemory, LEX_SYM_SIZE);
@@ -65,20 +126,22 @@ void main()
 	printf(INIT_MSG);
 	while (1) {
 		getInput();
-		if (strncmp(input, HELP_CMD, strlen(input)) == 0) {
+		dev_parsematch = parseNext(dev_parser, dev_tokens);
+
+		if (strncmp(dev_input, HELP_CMD, strlen(dev_input)) == 0) {
 			printf(HELP_MSG);
 		}
-		else if (strncmp(input, TOKEN_CMD, strlen(TOKEN_CMD)) == 0) {
+		else if (strncmp(dev_input, TOKEN_CMD, strlen(TOKEN_CMD)) == 0) {
 			freeptr();
 			int size = 0;
-			char *alphabet = readfile(input + strlen(TOKEN_CMD), &size, 256);
+			char *alphabet = readfile(dev_input + strlen(TOKEN_CMD), &size, 256);
 			if (alphabet != NULL) {
 				mem_tokenizer = newAlphabet(alphabet, size,
 					&tokmem);
 				free(alphabet);
 			}
 		}
-		else if (strncmp(input, PRNT_TOK_CMD, strlen(input)) == 0) {
+		else if (strncmp(dev_input, PRNT_TOK_CMD, strlen(dev_input)) == 0) {
 			if (mem_tokenizer != NULL) {
 				printf("\n");
 				printAlphabet(mem_tokenizer);
@@ -87,14 +150,14 @@ void main()
 			else
 				printf(NO_DATA_MSG);
 		}
-		else if (strncmp(input, LEX_CMD, strlen(LEX_CMD)) == 0) {
+		else if (strncmp(dev_input, LEX_CMD, strlen(LEX_CMD)) == 0) {
 			if (tokens != NULL) {
 				freeMemory(&lexmem);
 				tokens = NULL;
 			}
 			clock_t initTime = clock();
 			unsigned int size = 0;
-			char *lex = readfile(input + strlen(LEX_CMD), &size, 256);
+			char *lex = readfile(dev_input + strlen(LEX_CMD), &size, 256);
 			if (lex != NULL) {
 				fileinput.text = lex;
 				fileinput.textSize = size;
@@ -108,19 +171,19 @@ Took: %f seconds.\n", tokens->size,
 					(double)(stopTime - initTime) / CLOCKS_PER_SEC);
 			}
 		}
-		else if (strncmp(input, PRNT_LEX_CMD, strlen(PRNT_LEX_CMD)) == 0) {
+		else if (strncmp(dev_input, PRNT_LEX_CMD, strlen(PRNT_LEX_CMD)) == 0) {
 			if (tokens != NULL) {
 				printf("\n");
-				printTokenStream(tokens, *(input + strlen(PRNT_LEX_CMD)));
+				printTokenStream(tokens, *(dev_input + strlen(PRNT_LEX_CMD)));
 				printf("\n");
 			}
 			else
 				printf(NO_DATA_MSG);
 		}
-		else if (strncmp(input, CLEAR_COMAND, strlen(input)) == 0) {
+		else if (strncmp(dev_input, CLEAR_COMAND, strlen(dev_input)) == 0) {
 			clearscr();
 		}
-		else if (strncmp(input, EXIT_CMD, strlen(input)) == 0) {
+		else if (strncmp(dev_input, EXIT_CMD, strlen(dev_input)) == 0) {
 			freeptr();
 			exit(0);
 		}
@@ -129,23 +192,22 @@ Took: %f seconds.\n", tokens->size,
 	}
 }
 
+/*Reads input from stdin and lexes it all so it can later be parsed.*/
 void getInput() 
 {	
-	memset(input, 0x00, BUF_SIZE);
+	memset(dev_input, 0x00, BUF_SIZE);
 	printf("\n$> ");
-	fgets(input, BUF_SIZE - 1, stdin);
+	fgets(dev_input, BUF_SIZE - 1, stdin);
 	for (int x = 0; x < BUF_SIZE - 1; x++) {
-		if (isspace(*(input + x)) != 0) {
-			for (int z = x; z < BUF_SIZE - 1; z++) {
-				*(input + z) = *(input + (z + 1));
-			}
-			continue;
-		}
-		else if (*(input + x) == '\n') {
-			*(input + x) = '\0';
-			return;
+		if (*(dev_input + x) == '\n') {
+			dev_inputkiwi.textSize = x;
+			dev_inputkiwi.readSize = 0;
 		}
 	}
+	freeMemory(&dev_tokmem);
+	freeCleanMemory(&dev_symmem);
+	dev_tokens = lexAll(
+		&dev_inputkiwi, dev_tokenizer, &dev_lexmem, &dev_symmem);
 }
 
 void clearscr() 
@@ -154,7 +216,8 @@ void clearscr()
 	printf(INIT_MSG);
 }
 
-void freeptr() {
+void freeptr() 
+{
 	if (tokens != NULL) {
 		tokens = NULL;
 		freeMemory(&lexmem);
@@ -165,7 +228,8 @@ void freeptr() {
 	}
 }
 
-char *readfile(char *filename, unsigned int *fsize, int sector) {
+char *readfile(char *filename, unsigned int *fsize, int sector) 
+{
 	FILE *fl = fopen(filename, "r");
 	if (fl != NULL) {
 		int count = 1;

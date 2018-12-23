@@ -293,8 +293,8 @@ char *symbolTableContains(char *value, size_t size, struct MemBlock *mem)
 		for (; (x < size) && (lookahead <= limit);
 			x++, lookahead++, value++) {
 			if (*lookahead != *value) {
-				SKIP_NULL_LIMIT(lookahead, limit);
-				if (NULL_OR_LIMIT(value, limit)) {
+				SKIP_NUL_LIMIT(lookahead, limit);
+				if (NUL_OR_LIMIT(lookahead, limit)) {
 					return NULL;
 				}
 				else {
@@ -310,8 +310,8 @@ char *symbolTableContains(char *value, size_t size, struct MemBlock *mem)
 			return string;
 		}
 		else {
-			SKIP_NULL_LIMIT(lookahead, limit);
-			if (NULL_OR_LIMIT(lookahead, limit)) {
+			SKIP_NUL_LIMIT(lookahead, limit);
+			if (NUL_OR_LIMIT(lookahead, limit)) {
 				return NULL;
 			}
 			else {
@@ -333,15 +333,15 @@ the tokenizer.
 char *tokenOnlyMatch(char *word, int wrdsize, 
 	struct LinkList *tok)
 {
-	struct LinkList *tmphead = tok;
 	while (tok != NULL) {
 		if ((strncmp(tok->value, word, wrdsize) == 0) &&
-			(strlen(tok->value) == wrdsize))
+			(strlen(tok->value) == wrdsize)) {
 			return tok->value;
-		else
+		}
+		else {
 			tok = tok->next;
+		}
 	}
-	tok = tmphead;
 	return ERR_ID;
 }
 
@@ -362,39 +362,36 @@ struct Token lexNext(struct KiwiInput *input,
 	0xFF means the match belongs to one of the built in datatypes.
 	*/
 	unsigned char matchflag = 0x00;
-	unsigned int nsize = 1;
+	uint32_t len = 0;
+	uint32_t nsize = 1;
 	char *nextToken;
 	char *prevToken = NULL;
 	struct Token retval;
 		
+	const char *limit = input->text +
+		(input->textSize - input->readSize) - 1;
+
 	while (1) {
-		if (nsize > input->textSize - input->readSize) {
-			if (input->textSize - input->readSize <= 0) {
-				return newTypeToken(EOF_ID);
-			}
-			if (input->textSize - input->readSize == 1) {
+		if (input->text + nsize > limit) {
+			if (input->text + 1 > limit) {
 				if (matchflag != 0x00) {
-					if (matchflag == 0xAA) {
-						retval = newTypeToken(prevToken);
-					}
-					if (matchflag == 0xFF) {
-						retval = newValToken(prevToken,
-							input->text, 1, mem);
-					}
-					input->readSize++;
-					input->text++;
-					return retval;
+					goto __processmatch__;
 				}
-				input->readSize++;
-				input->text++;
-				return newTypeToken(EOF_ID);
+				else {
+					return newTypeToken(EOF_ID);
+				}
 			}
 			else {
 				input->text++;
 				input->readSize++;
+				len = skipWhiteSpace(&(input->text),
+					input->textSize - input->readSize);
+				input->text += len;
+				input->readSize += len;
 				nsize = 1;
 			}
 		}
+		else {}
 		nextToken = tokenOnlyMatch(input->text, nsize, tokenizer);
 		if (strcmp(nextToken, ERR_ID) != 0) {
 			matchflag = 0xAA;
@@ -414,8 +411,9 @@ struct Token lexNext(struct KiwiInput *input,
 		else
 			nsize++;
 	}
+	__processmatch__:
 	if (matchflag == 0xAA) {
-		int len = nsize - 1;
+		len = nsize - 1;
 		retval = newTypeToken(prevToken);
 		input->text += len;
 		input->readSize += len;
@@ -425,7 +423,7 @@ struct Token lexNext(struct KiwiInput *input,
 		return retval;
 	}
 	else if (matchflag == 0xFF) {
-		int len = nsize - 1;
+		len = nsize - 1;
 		retval = newValToken(prevToken, input->text, len, mem);
 		input->text += len;
 		input->readSize += len;
@@ -434,11 +432,13 @@ struct Token lexNext(struct KiwiInput *input,
 		input->readSize += len;
 		return retval;
 	}
-	return newTypeToken(EOF_ID);
+	else {
+		return newTypeToken(EOF_ID);
+	}
 }
 
 /*
-Lexes the whole input by repeteadly calling "lexNext". 
+Lexes the whole dev_input by repeteadly calling "lexNext". 
 */
 struct TokenArray *lexAll(struct KiwiInput *input,
 	struct LinkList *tok, struct MemBlock *tokenmem, 

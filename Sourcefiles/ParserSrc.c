@@ -1,7 +1,8 @@
 #include "Parser.h"
 
-char *PROD_SIGNAL = "->";
-char *PROD_END = ";";
+/*Load production dev_alphparser onto memory*/
+struct LinkList dev_parsertok = { PROD_SIGNAL, NULL };
+struct LinkList dev_alphparser = { PROD_END, &dev_parsertok };
 
 /*
 Creates the head for the production. This involves allocating the string
@@ -29,7 +30,7 @@ struct Production *newProHead(char *prodname, int namesize, struct
 
 /*Tries to add a new rule to the memory block. Returns zero if it was
 not able to do it and non-zero if it was able to do so.*/
-inline int addRule(char *val, struct MemBlock *mem, 
+int addRule(char *val, struct MemBlock *mem, 
 	struct Production *prod)
 {
 	char **ptr = kimalloc(sizeof(char *), mem);
@@ -47,51 +48,68 @@ inline int addRule(char *val, struct MemBlock *mem,
 Creates a new production with its rules. 
 */
 struct Production *newProduction(struct KiwiInput *input,
-	struct LinkList *tokenizer, struct MemBlock *parsemem,
+	struct LinkList *alphabet, struct MemBlock *parsemem,
 	struct MemBlock *lexmem)
 {
+	
+
 	struct Production *retval;
 	char *gramptr;
 	int appendres;
 	struct Token token;
 
-	token = lexNext(input, tokenizer, lexmem);
-	if (strcmp(token.type, CONST_STRING_ID) != 0) {
+	token = lexNext(input, &dev_alphparser, lexmem);
+	if (strcmp(token.type, STRING_ID) != 0) {
 		return NULL;
 	}
+	else {}
 
 	retval = newProHead(token.value, strlen(token.value), parsemem);
 	if (retval == NULL) {
 		return NULL;
 	}
-	retval->rules = (char *)parsemem->memory;
+	else {}
+	retval->rules = (char **)parsemem->memory;
 
-	token = lexNext(input, tokenizer, lexmem);
+	token = lexNext(input, &dev_alphparser, lexmem);
 	if (strcmp(token.type, PROD_SIGNAL) != 0) {
 		freeMemory(parsemem);
 		return NULL;
 	}
+	else {}
 	while(1) {
-		token = lexNext(input, tokenizer, lexmem);
-		gramptr = nul_alphabetContains(token.type, tokenizer);
+		__rulelexstart__:
+		token = lexNext(input, &dev_alphparser, lexmem);
+		gramptr = nul_alphabetContains(token.value, alphabet);
 		if (gramptr != NULL) {
 			appendres = addRule(gramptr, parsemem, retval);
-			if (appendres == 0)
+			if (appendres == 0) {
 				return NULL;
+			}
+			else {
+				continue;
+			}
 		}
+		else {}
 		for (uint8_t x = 0; x < BUILT_IN_AMNT; x++) {
 			if (strcmp(*BUILT_IN_TYPES[x], token.type) == 0) {
 				appendres = addRule(*BUILT_IN_TYPES[x], parsemem,
 					retval);
-				if (appendres == 0)
+				if (appendres == 0) {
 					return NULL;
+				}
+				else {
+					/*I have sinned.*/
+					goto __rulelexstart__;
+				}
 			}
-			else if (strcmp(token.type, PROD_END) == 0) {
-				return retval;
-			}
-			else {
-				return NULL;
-			}
+			else {}
+		}
+		if (strcmp(token.type, PROD_END) == 0) {
+			return retval;
+		}
+		else {
+			return NULL;
 		}
 	}
 }
@@ -102,7 +120,7 @@ list so that the matching hierarchy works as in the written file.
 (Whenever there are two possible productions the first one to be 
 declared on the file will be the one chosen).
 */
-inline void addProduction(struct Production **head,
+void addProduction(struct Production **head,
 	struct Production *node)
 {
 	if (*head == NULL) {
@@ -142,7 +160,7 @@ struct Production *newParser(struct KiwiInput *input,
 
 /*
 Compares the array of tokens with all the diferent productions inside
-the parser and returns the production name and its size in tokens.
+the dev_alphparser and returns the production name and its size in tokens.
 Bigger productions are preffered over smaller ones so if a match has
 been already been found and the next production has less lexemes
 or components it will be skipped(not analyzed). Productions that appear
@@ -156,10 +174,11 @@ struct Match parseNext(struct Production *parser,
 	char *prodname = NULL;
 	struct Production *tmphead = parser;
 	while (parser != NULL) {
-		if ((matchsize > parser->rulesize) || 
-			(parser->rulesize > tokens->size)) {
+		if ((matchsize < parser->rulesize) || 
+			(parser->rulesize < tokens->size)) {
 			for (uint8_t x = 0; x < parser->rulesize; x++) {
-				if (strcmp(*(parser->rules + x), tokens->token + x) != 0)
+				if (strcmp(*(parser->rules + x), 
+					(tokens->token + x)->value) != 0)
 					break;
 			}
 		}

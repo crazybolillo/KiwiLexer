@@ -67,20 +67,16 @@ struct LinkList *newAlphabet(char *grammar, int gramsize,
 Returns a pointer to the string inside the tokenizer if it exists
 or NULL if it does not.
 */
-char *alphabetContains(char *val, int valsz, struct LinkList *tokenizer)
+char *alphabetContains(char *val, int valsz, 
+	struct LinkList *tokenizer)
 {
-	struct LinkList *tmphead = tokenizer;
-	char *retval;
 	while (tokenizer != NULL) {
 		if ((strncmp(val, tokenizer->value, valsz) == 0) &&
 			(strlen(tokenizer->value) == valsz)) {
-			retval = tokenizer->value;
-			tokenizer = tmphead;
-			return retval;
+			return tokenizer->value;
 		}
 		tokenizer = tokenizer->next;
 	}
-	tokenizer = tmphead;
 	return NULL;
 }
 

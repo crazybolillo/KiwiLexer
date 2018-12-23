@@ -23,10 +23,10 @@ extern char **BUILT_IN_TYPES[];
 #define DOUBLE_TYPE 2
 #define INT_TYPE 1
 
-#define SKIP_NULL_LIMIT(value, limit) while((*value != 0x00) &&\
+#define SKIP_NUL_LIMIT(value, limit) while((*value != 0x00) &&\
 						(value <= limit)) value++;
 
-#define NULL_OR_LIMIT(value, limit) (*(value + 1) == 0x00) \
+#define NUL_OR_LIMIT(value, limit) (*(value + 1) == 0x00) \
 					|| (value == limit)
 
 struct KiwiInput {

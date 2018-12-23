@@ -5,7 +5,7 @@
 #include "Memory.h"
 
 struct LinkList {
-	void *value;
+	char *value;
 	struct LinkList *next;
 };
 
