@@ -10,13 +10,6 @@ struct MemBlock {
 	size_t used;
 };
 
-
-struct KiwiMemory {
-	struct LinkList *tokenizer;
-	struct LexMemBlock *lexer;
-	struct MemBlock *parser;
-};
-
 void initMemory(struct MemBlock *mem, char *ptr, size_t size);
 void *kimalloc(size_t size, struct MemBlock *mem);
 void *kicalloc(size_t size, struct MemBlock *mem);

@@ -50,9 +50,9 @@ struct LexerMemory {
 	struct MemBlock *symbolTable;
 };
 
-int isNumber(char *val, int size);
-int isString(char *val, int size);
-int isLiteral(char *val, int size);
+char isNumber(char *val, int size);
+char isString(char *val, int size);
+char isLiteral(char *val, int size);
 char *builtInMatch(char *value, int size);
 
 int skipWhiteSpace(char **str, int limit);
@@ -62,7 +62,8 @@ struct Token newValToken(char *type, char *value, int valsize,
 	struct MemBlock *mem);
 struct Token newTypeToken(char *type);
 void printTokenStream(struct TokenArray *token, char format);
-char *symbolTableContains(char *value, size_t size, struct MemBlock *mem);
+char *symbolTableContains(char *value, size_t size, 
+	struct MemBlock *mem);
 char appendToken(struct TokenArray *stream, struct Token node,
 	struct MemBlock *mem);
 char *tokenOnlyMatch(char *word, int wrdize, 

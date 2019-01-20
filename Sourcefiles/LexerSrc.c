@@ -8,9 +8,12 @@ char *CONST_STRING_ID = "CONST_STR";
 char *ERR_ID = "KNME"; 
 char *EOF_ID = "KEOF";
 
-/*Can't  use "char *BUILT_IN_TYPES[]" because apparently the
-corresponding values arent constant enough so I use 
-memory adresses instead which somehow are more constant.*/
+/*
+Literal strings can be modified and are not constant,
+even if the behavior is undefined and attempting to modify one
+usually crashes the program. Therefore adresses are used, since they
+are truly constant and can't be changed.
+*/
 char **BUILT_IN_TYPES[BUILT_IN_AMNT] = 
 {&DOUBLE_ID, &INTEGER_ID, &STRING_ID, &CONST_STRING_ID};
 
@@ -22,7 +25,7 @@ returns INT_TYPE if the char stream is an integer or
 DOUBLE_TYPE if the char stream is a double. Otherwise it
 returns cero if no match is found.
 */
-int isNumber(char *value, int size)
+char isNumber(char *value, int size)
 {
 	if (size <= 0)
 		return 0;
@@ -44,10 +47,12 @@ int isNumber(char *value, int size)
 			return 0;
 		}
 	}
-	if (pointflag == 0)
+	if (pointflag == 0) {
 		return INT_TYPE;
-	else
-		return DOUBLE_TYPE;
+	}
+	else { 
+		return DOUBLE_TYPE; 
+	}
 }
 
 /*
@@ -56,7 +61,7 @@ string or not. Valid strings may only contain letters and underscores.
 Aa - Zz. Returns one if the char stream is a valid string
 otherwise it returns cero.
 */
-int isString(char *value, int size) 
+char isString(char *value, int size) 
 {
 	if (size <= 0)
 		return 0;
@@ -74,7 +79,7 @@ String literals are considered everything between two double or single
 quotes. It may contain double or single quotes inside as long as they are
 properly escaped. eg ("\"");
 */
-int isLiteral(char *value, int size)
+char isLiteral(char *value, int size)
 {
     char delimitor;
 	if (size <= 1)
@@ -90,7 +95,7 @@ int isLiteral(char *value, int size)
     
     /*If the end of the string is not equal to the delimitor or the
     delimitor is escaped by a backlash which is not escaped.*/
-    if ((*(value + size - 1) != delimitor)) {
+    if ((*(value + size) != delimitor)) {
         return 0;
     }
     if ((*(value + size - 2) == '\\')) {
@@ -196,6 +201,11 @@ struct Token newValToken(char *type, char *value, int valsize,
 		if (retval.value == NULL) {
 			return newTypeToken(ERR_ID);
 		}
+	}
+	if (strcmp(type, CONST_STRING_ID) == 0) {
+		memcpy(retval.value, value + 1, valsize - 1);
+	}
+	else {
 		memcpy(retval.value, value, valsize);
 	}
 	return retval;
@@ -369,24 +379,21 @@ struct Token lexNext(struct KiwiInput *input,
 	struct Token retval;
 		
 	const char *limit = input->text +
-		(input->textSize - input->readSize) - 1;
+		(input->textSize - input->readSize);
 
 	while (1) {
 		if (input->text + nsize > limit) {
-			if (input->text + 1 > limit) {
-				if (matchflag != 0x00) {
-					goto __processmatch__;
-				}
-				else {
+			if (matchflag != 0x00) {
+				goto __processmatch__;
+			}
+			else if (input->text + 1 > limit) {
 					return newTypeToken(EOF_ID);
-				}
 			}
 			else {
 				input->text++;
 				input->readSize++;
 				len = skipWhiteSpace(&(input->text),
 					input->textSize - input->readSize);
-				input->text += len;
 				input->readSize += len;
 				nsize = 1;
 			}
@@ -408,8 +415,9 @@ struct Token lexNext(struct KiwiInput *input,
 		}
 		if (matchflag != 0x00)
 			break;
-		else
+		else {
 			nsize++;
+		}
 	}
 	__processmatch__:
 	if (matchflag == 0xAA) {

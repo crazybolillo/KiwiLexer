@@ -1,6 +1,7 @@
 #include "Parser.h"
 
-/*Load production dev_alphparser onto memory*/
+/*Load production dev_alphparser into memory. This is the alphabet 
+used to parse files that denote grammatical productions.*/
 struct LinkList dev_parsertok = { PROD_SIGNAL, NULL };
 struct LinkList dev_alphparser = { PROD_END, &dev_parsertok };
 
@@ -51,8 +52,6 @@ struct Production *newProduction(struct KiwiInput *input,
 	struct LinkList *alphabet, struct MemBlock *parsemem,
 	struct MemBlock *lexmem)
 {
-	
-
 	struct Production *retval;
 	char *gramptr;
 	int appendres;
@@ -77,40 +76,39 @@ struct Production *newProduction(struct KiwiInput *input,
 		return NULL;
 	}
 	else {}
-	while(1) {
-		__rulelexstart__:
-		token = lexNext(input, &dev_alphparser, lexmem);
-		gramptr = nul_alphabetContains(token.value, alphabet);
-		if (gramptr != NULL) {
-			appendres = addRule(gramptr, parsemem, retval);
+
+	__rulelexstart__:
+	token = lexNext(input, &dev_alphparser, lexmem);
+	gramptr = nul_alphabetContains(token.value, alphabet);
+	if (gramptr != NULL) {
+		appendres = addRule(gramptr, parsemem, retval);
+		if (appendres == 0) {
+			return NULL;
+		}
+		else {
+			goto __rulelexstart__;
+		}
+	}
+	else {}
+	for (uint8_t x = 0; x < BUILT_IN_AMNT; x++) {
+		if (strcmp(*BUILT_IN_TYPES[x], token.value) == 0) {
+			appendres = addRule(*BUILT_IN_TYPES[x], parsemem,
+				retval);
 			if (appendres == 0) {
 				return NULL;
 			}
 			else {
-				continue;
+				/*I have sinned.*/
+				goto __rulelexstart__;
 			}
 		}
 		else {}
-		for (uint8_t x = 0; x < BUILT_IN_AMNT; x++) {
-			if (strcmp(*BUILT_IN_TYPES[x], token.type) == 0) {
-				appendres = addRule(*BUILT_IN_TYPES[x], parsemem,
-					retval);
-				if (appendres == 0) {
-					return NULL;
-				}
-				else {
-					/*I have sinned.*/
-					goto __rulelexstart__;
-				}
-			}
-			else {}
-		}
-		if (strcmp(token.type, PROD_END) == 0) {
-			return retval;
-		}
-		else {
-			return NULL;
-		}
+	}
+	if (strcmp(token.type, PROD_END) == 0) {
+		return retval;
+	}
+	else {
+		return NULL;
 	}
 }
 
@@ -174,14 +172,21 @@ struct Match parseNext(struct Production *parser,
 	char *prodname = NULL;
 	struct Production *tmphead = parser;
 	while (parser != NULL) {
-		if ((matchsize < parser->rulesize) || 
-			(parser->rulesize < tokens->size)) {
+		if ((matchsize < parser->rulesize) && 
+			(parser->rulesize <= tokens->size)) {
 			for (uint8_t x = 0; x < parser->rulesize; x++) {
-				if (strcmp(*(parser->rules + x), 
-					(tokens->token + x)->value) != 0)
-					break;
+				const char *rule = *(parser->rules + x);
+				const char *token = (tokens->token + x)->type;
+				if (strcmp(rule, token) != 0) {
+					goto __nextloop__;
+				}
+				else {}
 			}
+			matchsize = parser->rulesize;
+			prodname = parser->name;
 		}
+		else {}
+		__nextloop__:
 		parser = parser->next;
 	}
 	parser = tmphead;

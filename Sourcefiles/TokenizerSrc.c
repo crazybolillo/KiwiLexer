@@ -46,7 +46,7 @@ struct LinkList *newAlphabet(char *grammar, int gramsize,
 {
 	struct LinkList *retval = NULL;
 	int x = 0; 
-	for (; x < gramsize; grammar++, x++) {
+	while (x < gramsize) {
 		if (*grammar == TOKEN_LIMIT) {
 			grammar++;
 			x++;
@@ -55,9 +55,16 @@ struct LinkList *newAlphabet(char *grammar, int gramsize,
 			len++; 
 			x += len;
 			grammar += len;
-			if (tok == NULL)
+			if (tok == NULL) {
 				return retval;
-			appendToList(tok, &retval);
+			}
+			else {
+				appendToList(tok, &retval);
+			}
+		}
+		else {
+			grammar++;
+			x++;
 		}
 	}
 	return retval;
