@@ -341,7 +341,7 @@ Tries to match a char stream of n size ONLY with the tokens found inside
 the tokenizer.
 */
 char *tokenOnlyMatch(char *word, int wrdsize, 
-	struct LinkList *tok)
+	struct AlphList *tok)
 {
 	while (tok != NULL) {
 		if ((strncmp(tok->value, word, wrdsize) == 0) &&
@@ -364,7 +364,7 @@ memory allocation fails during the lexing a NULL pointer is returned
 and the token is not consumed.
 */
 struct Token lexNext(struct KiwiInput *input,
-	struct LinkList *tokenizer, struct MemBlock *mem)
+	struct AlphList *tokenizer, struct MemBlock *mem)
 {
 	/*
 	0x00 means there is no match.
@@ -449,7 +449,7 @@ struct Token lexNext(struct KiwiInput *input,
 Lexes the whole dev_input by repeteadly calling "lexNext". 
 */
 struct TokenArray *lexAll(struct KiwiInput *input,
-	struct LinkList *tok, struct MemBlock *tokenmem, 
+	struct AlphList *tok, struct MemBlock *tokenmem, 
 	struct MemBlock *symbolmem)
 {
 	struct TokenArray *retval = kimalloc(sizeof(struct TokenArray),

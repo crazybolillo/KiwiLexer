@@ -51,7 +51,7 @@ a char array with its identifier as the first argument and a
 memory block (struct) to go with it with its identifier as the 
 second argument. The array's size is the third argument.*/
 MEM_DECL(dev_tokmemory, dev_tokmem, DEV_TOK_SIZE)
-struct LinkList *dev_tokenizer = NULL;
+struct AlphList *dev_tokenizer = NULL;
 
 MEM_DECL(dev_lexmemory, dev_lexmem, DEV_LEX_SIZE)
 MEM_DECL(dev_symbolmemory, dev_symmem, DEV_LEX_SIZE)
@@ -70,14 +70,14 @@ struct Match dev_parsematch;
 #define PARSE_SIZE 2048
 
 MEM_DECL(tokmemory, tokmem, TOK_SIZE)
-struct LinkList *mem_tokenizer = NULL;
+struct AlphList *mem_tokenizer = NULL;
 
 MEM_DECL(lexmemory, lexmem, LEX_TOK_SIZE)
 MEM_DECL(symbolmemory, symbolmem, LEX_TOK_SIZE)
 struct TokenArray *tokens = NULL;
 
 MEM_DECL(parsememory, parsmem, PARSE_SIZE)
-struct LinkList *parser = NULL;
+struct AlphList *parser = NULL;
 
 struct KiwiInput fileinput;
 

@@ -3,7 +3,6 @@
 
 #include "Tokenizer.h"
 #include "Memory.h"
-#include "Data.h"
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -67,11 +66,11 @@ char *symbolTableContains(char *value, size_t size,
 char appendToken(struct TokenArray *stream, struct Token node,
 	struct MemBlock *mem);
 char *tokenOnlyMatch(char *word, int wrdize, 
-	struct LinkList *tokenizer);
+	struct AlphList *tokenizer);
 struct Token lexNext(struct KiwiInput *input,
-	struct LinkList *tokenizer, struct MemBlock *mem);
+	struct AlphList *tokenizer, struct MemBlock *mem);
 struct TokenArray *lexAll(struct KiwiInput *input,
-	struct LinkList *tok, struct MemBlock *tokenmem, 
+	struct AlphList *tok, struct MemBlock *tokenmem, 
 	struct MemBlock *symbolmem);
 
 #endif

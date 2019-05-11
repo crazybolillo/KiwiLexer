@@ -7,10 +7,6 @@ void initMemory(struct MemBlock *mem, char *ptr, size_t size)
 	mem->used = 0;
 }
 
-/*
-Returns a pointer to the starting index of the allocated 
-value or NULL if the allocation failed.
-*/
 void *kimalloc(size_t size, struct MemBlock *mem)
 {
 	if (size + mem->used > mem->memsize) {
@@ -24,10 +20,6 @@ void *kimalloc(size_t size, struct MemBlock *mem)
 	}
 }
 
-/*
-Returns a pointer to the starting index of the allocated value and
-sets all the memory to 0x00 or returns NULL if the allocation failed.
-*/
 void *kicalloc(size_t size, struct MemBlock *mem)
 {
 	if (size + mem->used > mem->memsize) {
@@ -43,10 +35,6 @@ void *kicalloc(size_t size, struct MemBlock *mem)
 	}
 }
 
-/*
-Resets the byte offset to zero to override current data inside 
-the memory.
-*/
 void freeMemory(struct MemBlock *mem) 
 {
 	mem->memory -= mem->used;
@@ -59,9 +47,6 @@ void freeCleanMemory(struct MemBlock *mem)
 	freeMemory(mem);
 }
 
-/*
-Frees the last element that was allocated.
-*/
 void popMemory(size_t size, struct MemBlock *mem)
 {
 	if ((size > mem->memsize) || (size > mem->used)) {

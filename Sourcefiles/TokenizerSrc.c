@@ -1,18 +1,30 @@
 #include "Tokenizer.h"
 
-char *readAll(FILE *fl, unsigned int *sizeread, int sector)
+struct AlphList *newAlph(void *value, struct MemBlock *mem)
 {
-	char *rdata = NULL;
-	int count = 1;
-	do {
-		fseek(fl, 0, SEEK_SET);
-		rdata = realloc(rdata, sizeof(char) * (sector * count));
-		*sizeread = fread(rdata, 1, (sector * count), fl);
-		count++;
-	} while (feof(fl) == 0);
+	struct AlphList *retval = kimalloc(sizeof(struct AlphList), mem);
+	if (retval == NULL) {
+		return NULL;
+	}
+	retval->value = value;
+	retval->next = NULL;
+	return retval;
+}
 
-	rdata = realloc(rdata, *sizeread);
-	return rdata;
+
+void appendToAlph(struct AlphList *data, struct AlphList **head)
+{
+	if (*head == NULL) {
+		*head = data;
+	}
+	else if ((*head)->next == NULL) {
+		(*head)->next = data;
+	}
+	else {
+		struct AlphList *tmp = (*head)->next;
+		data->next = tmp;
+		(*head)->next = data;
+	}
 }
 
 int skipchar(char *ptr, char until, int limit)
@@ -25,10 +37,10 @@ int skipchar(char *ptr, char until, int limit)
 	return x;
 }
 
-struct LinkList *newLexeme(char *id, int idsize, 
+struct AlphList *newLexeme(char *id, int idsize, 
 	struct MemBlock *mem)
 {
-	struct LinkList *retval = kimalloc(sizeof(struct LinkList),
+	struct AlphList *retval = kimalloc(sizeof(struct AlphList),
 		mem);
 	if (retval == NULL)
 		return NULL;
@@ -41,17 +53,17 @@ struct LinkList *newLexeme(char *id, int idsize,
 }
 
 
-struct LinkList *newAlphabet(char *grammar, int gramsize,
+struct AlphList *newAlphabet(char *grammar, int gramsize,
 	struct MemBlock *mem)
 {
-	struct LinkList *retval = NULL;
+	struct AlphList *retval = NULL;
 	int x = 0; 
 	while (x < gramsize) {
 		if (*grammar == TOKEN_LIMIT) {
 			grammar++;
 			x++;
 			int len = skipchar(grammar, TOKEN_LIMIT, gramsize - x);
-			struct LinkList *tok = newLexeme(grammar, len, mem);
+			struct AlphList *tok = newLexeme(grammar, len, mem);
 			len++; 
 			x += len;
 			grammar += len;
@@ -59,7 +71,7 @@ struct LinkList *newAlphabet(char *grammar, int gramsize,
 				return retval;
 			}
 			else {
-				appendToList(tok, &retval);
+				appendToAlph(tok, &retval);
 			}
 		}
 		else {
@@ -75,7 +87,7 @@ Returns a pointer to the string inside the tokenizer if it exists
 or NULL if it does not.
 */
 char *alphabetContains(char *val, int valsz, 
-	struct LinkList *tokenizer)
+	struct AlphList *tokenizer)
 {
 	while (tokenizer != NULL) {
 		if ((strncmp(val, tokenizer->value, valsz) == 0) &&
@@ -87,9 +99,9 @@ char *alphabetContains(char *val, int valsz,
 	return NULL;
 }
 
-char *nul_alphabetContains(char *str, struct LinkList *tokenizer)
+char *nul_alphabetContains(char *str, struct AlphList *tokenizer)
 {
-	struct LinkList *tmphead = tokenizer;
+	struct AlphList *tmphead = tokenizer;
 	char *retval;
 	while(tokenizer != NULL) {
 		if (strcmp(tokenizer->value, str) == 0) {
@@ -103,9 +115,9 @@ char *nul_alphabetContains(char *str, struct LinkList *tokenizer)
 	return NULL;
 }
 
-void printAlphabet(struct LinkList *head)
+void printAlphabet(struct AlphList *head)
 {
-	struct LinkList *tmphead = head;
+	struct AlphList *tmphead = head;
 	char prntcount = 0;
 	while (head != NULL) {
 		if (prntcount >= 6) {

@@ -2,8 +2,8 @@
 
 /*Load production dev_alphparser into memory. This is the alphabet 
 used to parse files that denote grammatical productions.*/
-struct LinkList dev_parsertok = { PROD_SIGNAL, NULL };
-struct LinkList dev_alphparser = { PROD_END, &dev_parsertok };
+struct AlphList dev_parsertok = { PROD_SIGNAL, NULL };
+struct AlphList dev_alphparser = { PROD_END, &dev_parsertok };
 
 /*
 Creates the head for the production. This involves allocating the string
@@ -49,7 +49,7 @@ int addRule(char *val, struct MemBlock *mem,
 Creates a new production with its rules. 
 */
 struct Production *newProduction(struct KiwiInput *input,
-	struct LinkList *alphabet, struct MemBlock *parsemem,
+	struct AlphList *alphabet, struct MemBlock *parsemem,
 	struct MemBlock *lexmem)
 {
 	struct Production *retval;
@@ -136,7 +136,7 @@ void addProduction(struct Production **head,
 containing all productions and their rules. Returns NULL if it failed.
 */
 struct Production *newParser(struct KiwiInput *input,
-	struct LinkList *alphabet, struct MemBlock *parsemem,
+	struct AlphList *alphabet, struct MemBlock *parsemem,
 	struct MemBlock *lexmem)
 {
 	struct Production *prodhead;
