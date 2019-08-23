@@ -4,37 +4,30 @@
 #include <time.h>
 #include <stdio.h>
 
+//Define clear command for both Windows and Linux platforms.
 #define CLEAR_COMAND "clear"
 #if defined(_WIN32) || defined(_WIN64)
     #undef CLEAR_COMAND
 	#define CLEAR_COMAND "cls"
 #endif
 
-#define INIT_ERROR "I CAN'T CODE. ERROR WHILE INITAITING SHELL.\
-PLEASE FIX ME"
-#define INIT_MSG "KiwiLexer Testing Shell. \"help\" will show available commands.\n"
+#define INIT_ERROR "ERROR WHILE INITAITING SHELL"
+#define INIT_MSG "KiwiLexer Testing Shell.\n"
 #define FILE_ERR_MSG "\nCould not open file.\n"
 #define NO_DATA_MSG "\nNothing to print...\n"
 #define NOT_RECOG_MSG "\nCommand not recognized\n"
 
-#define HELP_CMD "help"
 #define TOKEN_CMD "alph"
 #define PRNT_TOK_CMD "printtok"
 #define LEX_CMD "lex"
 #define PRNT_LEX_CMD "printlex"
 #define EXIT_CMD "exit"
 
-/*Oh boy...*/
-#define MEM_DECL(name, memname, size) char name[size]; \
-struct MemBlock memname;
-
 /*Memory blocks that will be used troughout the application are
 declared here. The memory blocks used by the test shell itself to 
 parse commands are all prefixed by "dev_". All the other memory
 blocks are used to lex and parse user files.*/
-#define DEV_TOK_SIZE 256
-#define DEV_LEX_SIZE 256
-#define DEV_PARS_SIZE 256
+#define DEV_TOK_SIZE 256 
 #define BUF_SIZE 128
 
 /*All shell commands*/
@@ -46,6 +39,10 @@ char *parsetxt = "alph->tokenize, CONST_STR; lex->lex, CONST_STR; \
 printtok->printtok; printlex->printlex, INT; exit->exit;";
 struct KiwiInput parseinput;
 
+/*Oh boy...*/
+#define MEM_DECL(name, memname, size) char name[size]; \
+struct MemBlock memname;
+
 /*Declares variables in an horrendous way with macros. It creates
 a char array with its identifier as the first argument and a 
 memory block (struct) to go with it with its identifier as the 
@@ -53,11 +50,11 @@ second argument. The array's size is the third argument.*/
 MEM_DECL(dev_tokmemory, dev_tokmem, DEV_TOK_SIZE)
 struct AlphList *dev_tokenizer = NULL;
 
-MEM_DECL(dev_lexmemory, dev_lexmem, DEV_LEX_SIZE)
-MEM_DECL(dev_symbolmemory, dev_symmem, DEV_LEX_SIZE)
+MEM_DECL(dev_lexmemory, dev_lexmem, DEV_TOK_SIZE)
+MEM_DECL(dev_symbolmemory, dev_symmem, DEV_TOK_SIZE)
 struct TokenArray *dev_tokens;
 
-MEM_DECL(dev_parsmemory, dev_parsmem, DEV_PARS_SIZE)
+MEM_DECL(dev_parsmemory, dev_parsmem, DEV_TOK_SIZE)
 struct Production *dev_parser = NULL;
 
 char dev_input[BUF_SIZE];
@@ -123,7 +120,6 @@ void main()
 	while (1) {
 		getInput();
 		dev_parsematch = parseNext(dev_parser, dev_tokens);
-
 		if (dev_parsematch.id == NULL) {
 			printf(NOT_RECOG_MSG);
 		}
