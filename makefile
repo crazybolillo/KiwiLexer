@@ -1,7 +1,7 @@
 #Makefile to compile KiwiLexer and run it's test shell.
 
 CC = gcc
-INC = -I Headers
+INC = -I Headers -g -Q -v
 VPATH = Sourcefiles
 
 TestShell: MemorySrc.o TokenizerSrc.o LexerSrc.o ParserSrc.o

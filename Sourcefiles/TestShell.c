@@ -30,31 +30,29 @@ blocks are used to lex and parse user files.*/
 #define DEV_TOK_SIZE 256 
 #define BUF_SIZE 128
 
-/*All shell commands*/
-char *shellalph = "\"exit\"\
-\"tokenize\" \"lex\" \"printtok\" \"printlex\"";
+/*Shell words(tokens) and productions are declared. The 
+compiler automatically concatenates strings that are together so
+macro functions will become part of the definitions.*/
+char *shellalph = CLEAR_COMAND"\"exit\"\
+\"tokenize\" \"lex\" \"printtok\" \"printlex\" \"parse\"";
 
-/*Productions for the shell commands.*/
 char *parsetxt = "alph->tokenize, CONST_STR; lex->lex, CONST_STR; \
-printtok->printtok; printlex->printlex, INT; exit->exit;";
+printtok->printtok; printlex->printlex, INT; exit->exit;" ;
 struct KiwiInput parseinput;
 
-/*Oh boy...*/
-#define MEM_DECL(name, memname, size) char name[size]; \
-struct MemBlock memname;
-
-/*Declares variables in an horrendous way with macros. It creates
-a char array with its identifier as the first argument and a 
-memory block (struct) to go with it with its identifier as the 
-second argument. The array's size is the third argument.*/
-MEM_DECL(dev_tokmemory, dev_tokmem, DEV_TOK_SIZE)
+char dev_tokmemory[DEV_TOK_SIZE]; 
+struct MemBlock dev_tokmem;
 struct AlphList *dev_tokenizer = NULL;
 
-MEM_DECL(dev_lexmemory, dev_lexmem, DEV_TOK_SIZE)
-MEM_DECL(dev_symbolmemory, dev_symmem, DEV_TOK_SIZE)
+char dev_lexmemory[DEV_TOK_SIZE];
+struct MemBlock dev_lexmem;
 struct TokenArray *dev_tokens;
 
-MEM_DECL(dev_parsmemory, dev_parsmem, DEV_TOK_SIZE)
+char dev_symbolmemory[DEV_TOK_SIZE];
+struct MemBlock dev_symmem;
+
+char dev_parsememory[DEV_TOK_SIZE];
+struct MemBlock dev_parsemem;
 struct Production *dev_parser = NULL;
 
 char dev_input[BUF_SIZE];
@@ -66,15 +64,20 @@ struct Match dev_parsematch;
 #define LEX_SYM_SIZE 1024
 #define PARSE_SIZE 2048
 
-MEM_DECL(tokmemory, tokmem, TOK_SIZE)
+char tokmemory[TOK_SIZE];
+struct MemBlock tokmem;
 struct AlphList *mem_tokenizer = NULL;
 
-MEM_DECL(lexmemory, lexmem, LEX_TOK_SIZE)
-MEM_DECL(symbolmemory, symbolmem, LEX_TOK_SIZE)
+char lexmemory[LEX_TOK_SIZE];
+struct MemBlock lexmem;
 struct TokenArray *tokens = NULL;
 
-MEM_DECL(parsememory, parsmem, PARSE_SIZE)
-struct AlphList *parser = NULL;
+char symbolmemory[LEX_TOK_SIZE];
+struct MemBlock symbolmem;
+
+char parsememory[PARSE_SIZE];
+struct MemBlock parsemem;
+struct Production *parser = NULL;
 
 struct KiwiInput fileinput;
 
@@ -90,7 +93,7 @@ void main()
 	initMemory(&dev_tokmem, dev_tokmemory, DEV_TOK_SIZE);
 	initMemory(&dev_lexmem, dev_lexmemory, DEV_TOK_SIZE);
 	initMemory(&dev_symmem, dev_symbolmemory, DEV_TOK_SIZE);
-	initMemory(&dev_parsmem, dev_parsmemory, DEV_TOK_SIZE);
+	initMemory(&dev_parsemem, dev_parsememory, DEV_TOK_SIZE);
 
 	dev_tokenizer = newAlphabet(shellalph, strlen(shellalph),
 		&dev_tokmem);
@@ -101,7 +104,7 @@ void main()
 	parseinput.text = parsetxt;
 	parseinput.readSize = 0;
 	parseinput.textSize = strlen(parsetxt);
-	dev_parser = newParser(&parseinput, dev_tokenizer, &dev_parsmem,
+	dev_parser = newParser(&parseinput, dev_tokenizer, &dev_parsemem,
 		&dev_symmem);
 	if (dev_parser == NULL) {
 		printf("PARSER ERROR. FIX ME\n");
@@ -113,7 +116,7 @@ void main()
 	initMemory(&tokmem, tokmemory, TOK_SIZE);	
 	initMemory(&lexmem, lexmemory, LEX_TOK_SIZE);
 	initMemory(&symbolmem, symbolmemory, LEX_SYM_SIZE);
-	initMemory(&parsmem, parsememory, PARSE_SIZE);
+	initMemory(&parsemem, parsememory, PARSE_SIZE);
 	printf(INIT_MSG);
 
 	/*MAIN PROGRAM LOOP. PROGRAM STARTS HERE*/
