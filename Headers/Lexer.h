@@ -52,20 +52,19 @@ struct LexerMemory {
 char isNumber(char *val, int size);
 char isString(char *val, int size);
 char isLiteral(char *val, int size);
-char *builtInMatch(char *value, int size);
+char *dev_builtInMatch(char *value, int size);
 
 int skipWhiteSpace(char **str, int limit);
 
-struct Token newToken(char *type, char *value);
-struct Token newValToken(char *type, char *value, int valsize,
+struct Token dev_newValToken(char *type, char *value, int valsize,
 	struct MemBlock *mem);
-struct Token newTypeToken(char *type);
+struct Token dev_newTypeToken(char *type);
 void printTokenStream(struct TokenArray *token, char format);
-char *symbolTableContains(char *value, size_t size, 
+char *dev_symbolTableContains(char *value, size_t size, 
 	struct MemBlock *mem);
-char appendToken(struct TokenArray *stream, struct Token node,
+char dev_appendToken(struct TokenArray *stream, struct Token node,
 	struct MemBlock *mem);
-char *tokenOnlyMatch(char *word, int wrdize, 
+char *dev_tokenOnlyMatch(char *word, int wrdize, 
 	struct AlphList *tokenizer);
 struct Token lexNext(struct KiwiInput *input,
 	struct AlphList *tokenizer, struct MemBlock *mem);

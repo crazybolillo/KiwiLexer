@@ -1,18 +1,9 @@
 #include "Tokenizer.h"
 
-struct AlphList *newAlph(void *value, struct MemBlock *mem)
-{
-	struct AlphList *retval = kimalloc(sizeof(struct AlphList), mem);
-	if (retval == NULL) {
-		return NULL;
-	}
-	retval->value = value;
-	retval->next = NULL;
-	return retval;
-}
-
-
-void appendToAlph(struct AlphList *data, struct AlphList **head)
+/*
+Adds the node to the list. It adds it to the end of the list.
+*/
+void dev_appendToAlph(struct AlphList *data, struct AlphList **head)
 {
 	if (*head == NULL) {
 		*head = data;
@@ -27,6 +18,10 @@ void appendToAlph(struct AlphList *data, struct AlphList **head)
 	}
 }
 
+/*
+Skips chars (moves the pointer) in a char array until it finds the char
+passed trough the parameters.
+*/
 int skipchar(char *ptr, char until, int limit)
 {
 	int x = 0;
@@ -37,7 +32,11 @@ int skipchar(char *ptr, char until, int limit)
 	return x;
 }
 
-struct AlphList *newLexeme(char *id, int idsize, 
+/*
+Creates a lexeme (node of a linked list). Allocates all necessary memory.
+Returns NULL if there was not enough memory.
+*/
+struct AlphList *dev_newLexeme(char *id, int idsize, 
 	struct MemBlock *mem)
 {
 	struct AlphList *retval = kimalloc(sizeof(struct AlphList),
@@ -52,7 +51,10 @@ struct AlphList *newLexeme(char *id, int idsize,
 	return retval;
 }
 
-
+/*
+Reads a text file and creates an alphabet with all the lexems found in
+it.
+*/
 struct AlphList *newAlphabet(char *grammar, int gramsize,
 	struct MemBlock *mem)
 {
@@ -63,7 +65,7 @@ struct AlphList *newAlphabet(char *grammar, int gramsize,
 			grammar++;
 			x++;
 			int len = skipchar(grammar, TOKEN_LIMIT, gramsize - x);
-			struct AlphList *tok = newLexeme(grammar, len, mem);
+			struct AlphList *tok = dev_newLexeme(grammar, len, mem);
 			len++; 
 			x += len;
 			grammar += len;
@@ -71,7 +73,7 @@ struct AlphList *newAlphabet(char *grammar, int gramsize,
 				return retval;
 			}
 			else {
-				appendToAlph(tok, &retval);
+				dev_appendToAlph(tok, &retval);
 			}
 		}
 		else {
@@ -83,26 +85,13 @@ struct AlphList *newAlphabet(char *grammar, int gramsize,
 }
 
 /*
-Returns a pointer to the string inside the tokenizer if it exists
-or NULL if it does not.
+Returns a pointer to the string if its contained in the alphabet. Returns
+NULL if it could not be found. 
 */
-char *alphabetContains(char *val, int valsz, 
-	struct AlphList *tokenizer)
-{
-	while (tokenizer != NULL) {
-		if ((strncmp(val, tokenizer->value, valsz) == 0) &&
-			(strlen(tokenizer->value) == valsz)) {
-			return tokenizer->value;
-		}
-		tokenizer = tokenizer->next;
-	}
-	return NULL;
-}
-
-char *nul_alphabetContains(char *str, struct AlphList *tokenizer)
+char *dev_alphabetContains(char *str, struct AlphList *tokenizer)
 {
 	struct AlphList *tmphead = tokenizer;
-	char *retval;
+	char* retval = NULL;
 	while(tokenizer != NULL) {
 		if (strcmp(tokenizer->value, str) == 0) {
 			retval = tokenizer->value;
@@ -112,10 +101,13 @@ char *nul_alphabetContains(char *str, struct AlphList *tokenizer)
 		tokenizer = tokenizer->next;
 	}
 	tokenizer = tmphead;
-	return NULL;
+	return retval;
 }
 
-void printAlphabet(struct AlphList *head)
+/*
+Prints the alphabet lexemes. Mainly used for debugging.
+*/
+void dev_printAlphabet(struct AlphList *head)
 {
 	struct AlphList *tmphead = head;
 	char prntcount = 0;
