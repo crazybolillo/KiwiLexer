@@ -44,11 +44,6 @@ struct TokenArray {
 	uint16_t size;
 };
 
-struct LexerMemory {
-	struct MemBlock *tokenTable;
-	struct MemBlock *symbolTable;
-};
-
 char isNumber(char *val, int size);
 char isString(char *val, int size);
 char isLiteral(char *val, int size);
