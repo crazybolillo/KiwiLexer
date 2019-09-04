@@ -5,10 +5,11 @@
 #include <stdio.h>
 
 //Define clear command for both Windows and Linux platforms.
+
 #define CLEAR_COMAND "clear"
 #if defined(_WIN32) || defined(_WIN64)
-    #undef CLEAR_COMAND
-	#define CLEAR_COMAND "cls"
+#undef CLEAR_COMAND
+#define CLEAR_COMAND "cls"
 #endif
 
 #define INIT_ERROR "ERROR WHILE INITAITING SHELL"
@@ -17,6 +18,7 @@
 #define NO_DATA_MSG "\nNothing to print...\n"
 #define NOT_RECOG_MSG "\nCommand not recognized\n"
 
+#define CLEAR_CMD "clear"
 #define TOKEN_CMD "alph"
 #define PRNT_TOK_CMD "printtok"
 #define LEX_CMD "lex"
@@ -33,11 +35,11 @@ blocks are used to lex and parse user files.*/
 /*Shell words(tokens) and productions are declared. The 
 compiler automatically concatenates strings that are together so
 macro functions will become part of the definitions.*/
-char *shellalph = CLEAR_COMAND"\"exit\"\
+char *shellalph = "\"clear\"\"exit\"\
 \"tokenize\" \"lex\" \"printtok\" \"printlex\" \"parse\"";
 
 char *parsetxt = "alph->tokenize, CONST_STR; lex->lex, CONST_STR; \
-printtok->printtok; printlex->printlex, INT; exit->exit;" ;
+printtok->printtok; printlex->printlex, INT; exit->exit; clear->clear;";
 struct KiwiInput parseinput;
 
 char dev_tokmemory[DEV_TOK_SIZE]; 
@@ -136,15 +138,17 @@ void main()
 					&tokmem);
 				free(alphabet);
 			}
+			else {}
 		}
 		else if (strcmp(dev_parsematch.id, PRNT_TOK_CMD) == 0) {
 			if (mem_tokenizer != NULL) {
 				printf("\n");
-				printAlphabet(mem_tokenizer);
+				dev_printAlphabet(mem_tokenizer);
 				printf("\n");
 			}
-			else
+			else {
 				printf(NO_DATA_MSG);
+			}
 		}
 		else if (strcmp(dev_parsematch.id, LEX_CMD) == 0) {
 			if (tokens != NULL) {
@@ -163,10 +167,11 @@ void main()
 				tokens = lexAll(&fileinput, mem_tokenizer, &lexmem, 
 					&symbolmem);
 				clock_t stopTime = clock();
-				printf("Lexing completed. %d tokens generated\
-Took: %f seconds.\n", tokens->size, 
+				printf("Lexing completed. %d tokens generated"
+						"Took: %f seconds.\n", tokens->size, 
 					(double)(stopTime - initTime) / CLOCKS_PER_SEC);
 			}
+			else {}
 		}
 		else if (strcmp(dev_parsematch.id, PRNT_LEX_CMD) == 0) {
 			if (tokens != NULL) {
@@ -177,7 +182,7 @@ Took: %f seconds.\n", tokens->size,
 			else
 				printf(NO_DATA_MSG);
 		}
-		else if (strcmp(dev_parsematch.id, CLEAR_COMAND) == 0) {
+		else if (strcmp(dev_parsematch.id, CLEAR_CMD) == 0) {
 			clearscr();
 		}
 		else if (strcmp(dev_parsematch.id, EXIT_CMD) == 0) {
@@ -204,7 +209,7 @@ void getInput()
 			break;
 		}
 	}
-	freeMemory(&dev_tokmem);
+	freeMemory(&dev_lexmem);
 	freeCleanMemory(&dev_symmem);
 	dev_tokens = lexAll(
 		&dev_inputkiwi, dev_tokenizer, &dev_lexmem, &dev_symmem);

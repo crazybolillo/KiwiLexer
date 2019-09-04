@@ -10,7 +10,7 @@ Creates the head for the production. This involves allocating the string
 that should be returned whenever the rules for this production are met
 during parsing. 
 */
-struct Production *newProHead(char *prodname, int namesize, struct
+struct Production *dev_newProHead(char *prodname, int namesize, struct
 	MemBlock *mem)
 {
 	struct Production *retval = kimalloc(sizeof(struct Production),
@@ -31,7 +31,7 @@ struct Production *newProHead(char *prodname, int namesize, struct
 
 /*Tries to add a new rule to the memory block. Returns zero if it was
 not able to do it and non-zero if it was able to do so.*/
-int addRule(char *val, struct MemBlock *mem, 
+int dev_addRule(char *val, struct MemBlock *mem, 
 	struct Production *prod)
 {
 	char **ptr = kimalloc(sizeof(char *), mem);
@@ -48,7 +48,7 @@ int addRule(char *val, struct MemBlock *mem,
 /*
 Creates a new production with its rules. 
 */
-struct Production *newProduction(struct KiwiInput *input,
+struct Production *dev_newProduction(struct KiwiInput *input,
 	struct AlphList *alphabet, struct MemBlock *parsemem,
 	struct MemBlock *lexmem)
 {
@@ -63,7 +63,7 @@ struct Production *newProduction(struct KiwiInput *input,
 	}
 	else {}
 
-	retval = newProHead(token.value, strlen(token.value), parsemem);
+	retval = dev_newProHead(token.value, strlen(token.value), parsemem);
 	if (retval == NULL) {
 		return NULL;
 	}
@@ -79,9 +79,9 @@ struct Production *newProduction(struct KiwiInput *input,
 
 	__rulelexstart__:
 	token = lexNext(input, &dev_alphparser, lexmem);
-	gramptr = nul_alphabetContains(token.value, alphabet);
+	gramptr = dev_alphabetContains(token.value, alphabet);
 	if (gramptr != NULL) {
-		appendres = addRule(gramptr, parsemem, retval);
+		appendres = dev_addRule(gramptr, parsemem, retval);
 		if (appendres == 0) {
 			return NULL;
 		}
@@ -92,7 +92,7 @@ struct Production *newProduction(struct KiwiInput *input,
 	else {}
 	for (uint8_t x = 0; x < BUILT_IN_AMNT; x++) {
 		if (strcmp(*BUILT_IN_TYPES[x], token.value) == 0) {
-			appendres = addRule(*BUILT_IN_TYPES[x], parsemem,
+			appendres = dev_addRule(*BUILT_IN_TYPES[x], parsemem,
 				retval);
 			if (appendres == 0) {
 				return NULL;
@@ -118,7 +118,7 @@ list so that the matching hierarchy works as in the written file.
 (Whenever there are two possible productions the first one to be 
 declared on the file will be the one chosen).
 */
-void addProduction(struct Production **head,
+void dev_addProduction(struct Production **head,
 	struct Production *node)
 {
 	if (*head == NULL) {
@@ -142,16 +142,16 @@ struct Production *newParser(struct KiwiInput *input,
 	struct Production *prodhead;
 	struct Production *nexthead;
 
-	prodhead = newProduction(input, alphabet, parsemem, lexmem);
+	prodhead = dev_newProduction(input, alphabet, parsemem, lexmem);
 	if (prodhead == NULL)
 		return NULL;
 	while (1) {
-		nexthead = newProduction(input, alphabet, parsemem, lexmem);
+		nexthead = dev_newProduction(input, alphabet, parsemem, lexmem);
 		if (nexthead == NULL) {
 			return prodhead;
 		}
 		else {
-			addProduction(&prodhead, nexthead);
+			dev_addProduction(&prodhead, nexthead);
 		}
 	}
 }

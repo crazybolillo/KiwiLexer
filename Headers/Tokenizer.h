@@ -19,31 +19,13 @@ struct AlphList {
 	struct AlphList *next;
 };
 
-
-/*
-Creates a list node. Sets its value to that passed on the parameters and 
-its next node as a NULL pointer by default. 
-*/
-struct AlphList *newAlph(void *value, struct MemBlock *mem);
-
-/*
-Adds the node to the list. It adds it to the end of the list.
-*/
-void appendToAlph(struct AlphList *data, struct AlphList **head);
-
-/*
-Skips chars (moves the pointer) in a char array until it finds the char
-passed trough the parameters.
-*/
+void dev_appendToAlph(struct AlphList *data, struct AlphList **head);
 int skipchar(char *ptr, char until, int limit);
-
-struct AlphList *newLexeme(char *id, int idsize,
+struct AlphList *dev_newLexeme(char *id, int idsize,
 	struct MemBlock *mem);
 struct AlphList *newAlphabet(char *grammar, int gramsize,
 	struct MemBlock *mem);
-char *alphabetContains(char *val, int valsz, 
-	struct AlphList *tokenizer);
-char *nul_alphabetContains(char *str, struct AlphList *tokenizer);
-void printAlphabet(struct AlphList *tokenizer);
+char *dev_alphabetContains(char *str, struct AlphList *tokenizer);
+void dev_printAlphabet(struct AlphList *tokenizer);
 
 #endif

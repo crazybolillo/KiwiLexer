@@ -20,13 +20,13 @@ struct Match {
 	uint8_t size;
 };
 
-struct Production *newProHead(char *prodname, int namesize,
+struct Production *dev_newProHead(char *prodname, int namesize,
 	struct MemBlock *mem);
-int addRule(char *val, struct MemBlock *mem, 
+int dev_addRule(char *val, struct MemBlock *mem, 
 	struct Production *prod);
-void addProduction(struct Production **head, 
+void dev_addProduction(struct Production **head, 
 	struct Production *node);
-struct Production *newProduction(struct KiwiInput *input,
+struct Production *dev_newProduction(struct KiwiInput *input,
 	struct AlphList *alphabet, struct MemBlock *parsemem, 
 	struct MemBlock *lexmem);
 struct Production *newParser(struct KiwiInput *input,

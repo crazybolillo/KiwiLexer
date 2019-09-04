@@ -131,7 +131,7 @@ the built in data types consisting of integers, doubles
 or strings and literals. Returns their respective IDs if a 
 match is found. Otherwise it returns the ERR_ID ID.
 */
-char *builtInMatch(char *value, int size)
+char *dev_builtInMatch(char *value, int size)
 {
 	int flag;
 	flag = isNumber(value, size);
@@ -158,9 +158,9 @@ char *builtInMatch(char *value, int size)
 
 /*
 Skips all whitespace (tabs, newlines and spaces) until it finds
-a non white space character or reaches the limit.  Returns how many chars were skipped.
-MODIFIES the char pointer passed trough the parameters so it points
-to the next non-whitespace char. 
+a non white space character or reaches the limit. Returns how many chars
+were skipped. MODIFIES the char pointer passed trough the parameters so it 
+points to the next non-whitespace char. 
 */
 int skipWhiteSpace(char **str, int limit)
 {
@@ -173,33 +173,20 @@ int skipWhiteSpace(char **str, int limit)
 }
 
 /*
-Creates a new Token that simply points to the char ptrs
-passed trough the parameters. Pointer values are NOT copied,
-the struct just points to those pointers.
-*/
-struct Token newToken(char *type, char *value)
-{
-	struct Token retval;
-	retval.type = type;
-	retval.value = value;
-	return retval;
-}
-
-/*
 Creates a new Token where the values of the name ptr ARE COPIED 
 (memcpy) and the type of the token just points to the one passed 
 trough the parameters.
 */
-struct Token newValToken(char *type, char *value, int valsize,
+struct Token dev_newValToken(char *type, char *value, int valsize,
 	struct MemBlock *mem)
 {
 	struct Token retval;
 	retval.type = type;
-	retval.value = symbolTableContains(value, valsize, mem);
+	retval.value = dev_symbolTableContains(value, valsize, mem);
 	if (retval.value == NULL) {
 		retval.value = kicalloc(sizeof(char) * valsize + 1, mem);
 		if (retval.value == NULL) {
-			return newTypeToken(ERR_ID);
+			return dev_newTypeToken(ERR_ID);
 		}
 	}
 	if (strcmp(type, CONST_STRING_ID) == 0) {
@@ -216,7 +203,7 @@ Creates a new Token where both its nextToken and values point to the
 pointer passed trough the parameters. Commonly used when the Token
 its is own Lexeme.
 */
-struct Token newTypeToken(char *type)
+struct Token dev_newTypeToken(char *type)
 {
 	struct Token retval;
 	retval.type = type;
@@ -267,7 +254,7 @@ void printTokenStream(struct TokenArray *ptr, char format)
 /*
 Tries to add the token to the memory block. Returns 0 if it was not
 able to add it.*/
-char appendToken(struct TokenArray *stream, struct Token node, 
+char dev_appendToken(struct TokenArray *stream, struct Token node, 
 	struct MemBlock *mem) 
 {
 	struct Token *tok = kimalloc(sizeof(struct Token), mem);
@@ -287,7 +274,7 @@ Strings are NUL terminated and the end of valid strings is signaled
 by two NUL (0x00) characters one after the other. If the symbol has
 not been allocated it returns NULL.
 */
-char *symbolTableContains(char *value, size_t size, struct MemBlock *mem) 
+char *dev_symbolTableContains(char *value, size_t size, struct MemBlock *mem) 
 {
 	if (mem->used == 0) {
 		return NULL;
@@ -340,7 +327,7 @@ char *symbolTableContains(char *value, size_t size, struct MemBlock *mem)
 Tries to match a char stream of n size ONLY with the tokens found inside
 the tokenizer.
 */
-char *tokenOnlyMatch(char *word, int wrdsize, 
+char *dev_tokenOnlyMatch(char *word, int wrdsize, 
 	struct AlphList *tok)
 {
 	while (tok != NULL) {
@@ -356,6 +343,8 @@ char *tokenOnlyMatch(char *word, int wrdsize,
 }
 
 /*
+MAIN FUNCTION. SPAGHETTI AHEAD. UNDERSTANDING THIS MEANS YOU UNDERSTAND
+THE WHOLE PROGRAM. 
 Starts lexing just one char and increases the size to be lexed by one
 with each iteration. If a match is found it still increases the size
 to be lexed by one. It stops until a match is no longer found. Once a
@@ -387,7 +376,7 @@ struct Token lexNext(struct KiwiInput *input,
 				goto __processmatch__;
 			}
 			else if (input->text + 1 > limit) {
-					return newTypeToken(EOF_ID);
+					return dev_newTypeToken(EOF_ID);
 			}
 			else {
 				input->text++;
@@ -399,14 +388,14 @@ struct Token lexNext(struct KiwiInput *input,
 			}
 		}
 		else {}
-		nextToken = tokenOnlyMatch(input->text, nsize, tokenizer);
+		nextToken = dev_tokenOnlyMatch(input->text, nsize, tokenizer);
 		if (strcmp(nextToken, ERR_ID) != 0) {
 			matchflag = 0xAA;
 			prevToken = nextToken;
 			nsize++;
 			continue;
 		}
-		nextToken = builtInMatch(input->text, nsize);
+		nextToken = dev_builtInMatch(input->text, nsize);
 		if (strcmp(nextToken, ERR_ID) != 0) {
 			matchflag = 0xFF;
 			prevToken = nextToken;
@@ -422,7 +411,7 @@ struct Token lexNext(struct KiwiInput *input,
 	__processmatch__:
 	if (matchflag == 0xAA) {
 		len = nsize - 1;
-		retval = newTypeToken(prevToken);
+		retval = dev_newTypeToken(prevToken);
 		input->text += len;
 		input->readSize += len;
 		len = skipWhiteSpace(&(input->text),
@@ -432,7 +421,7 @@ struct Token lexNext(struct KiwiInput *input,
 	}
 	else if (matchflag == 0xFF) {
 		len = nsize - 1;
-		retval = newValToken(prevToken, input->text, len, mem);
+		retval = dev_newValToken(prevToken, input->text, len, mem);
 		input->text += len;
 		input->readSize += len;
 		len = skipWhiteSpace(&(input->text),
@@ -441,7 +430,7 @@ struct Token lexNext(struct KiwiInput *input,
 		return retval;
 	}
 	else {
-		return newTypeToken(EOF_ID);
+		return dev_newTypeToken(EOF_ID);
 	}
 }
 
@@ -471,9 +460,12 @@ struct TokenArray *lexAll(struct KiwiInput *input,
 			(strcmp(token.type, ERR_ID) == 0)) {
 			return retval;
 		}
-		append = appendToken(retval, token, tokenmem);
-		if (append == 0) {
-			return retval;
+		else {
+			append = dev_appendToken(retval, token, tokenmem);
+			if (append == 0) {
+				return retval;
+			}
+			else {/*Loop continues*/}
 		}
 	}
 }
