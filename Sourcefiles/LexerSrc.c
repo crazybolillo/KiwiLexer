@@ -50,18 +50,22 @@ char isNumber(char *value, int size)
 		}
 	}
 	else {}
-	for (int x = 0; x < size; x++) {
-		if (value[x] == '.') {
+	for (int x = 0; x < size; x++)
+	{
+		if (value[x] == '.')
+		{
 			pointflag++;
 			if (pointflag > 1)
 				return 0;
 		}
-		else if (value[x] == '-') {
+		else if (value[x] == '-')
+		{
 			minusflag++;
 			if (minusflag > 1)
 				return 0;
 		}
-		else if (isdigit(value[x]) == 0) {
+		else if (isdigit(value[x]) == 0)
+		{
 			return 0;
 		}
 	}

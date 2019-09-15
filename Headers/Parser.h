@@ -26,6 +26,6 @@ struct Production *dev_newProduction(struct KiwiInput *input,
 	struct MemBlock *lexmem);
 struct Production *newParser(struct KiwiInput *input,
 	struct AlphList *alphabet, struct MemBlock *parsemem,
-	struct MemBlock *symbolmem);
+	struct MemBlock *lexmem);
 struct Match parseNext(struct Production *parser, 
 	struct TokenArray *tokens);

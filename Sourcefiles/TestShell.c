@@ -65,7 +65,7 @@ void main()
 	prodtxt.text = productions;
 	prodtxt.textSize = strlen(productions);
 	prodtxt.readSize = 0;
-	parser = newParser(&prodtxt, tokenizer, &parseblock, &symbolblock);
+	parser = newParser(&prodtxt, tokenizer, &parseblock, &lexblock);
 
 	/*MAIN PROGRAM LOOP. PROGRAM STARTS HERE*/
 	while (1) 
@@ -111,6 +111,7 @@ void getInput()
 			break;
 		}
 	}
+	freeMemory(&lexblock);
 	tokens = lexAll(&inputkiwi, tokenizer, &lexblock, &symbolblock,
 		&dev_tokenOnlyMatch);
 }
