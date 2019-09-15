@@ -5,193 +5,93 @@
 #include <stdio.h>
 
 //Define clear command for both Windows and Linux platforms.
-
 #define CLEAR_COMAND "clear"
 #if defined(_WIN32) || defined(_WIN64)
 #undef CLEAR_COMAND
 #define CLEAR_COMAND "cls"
 #endif
 
-#define INIT_ERROR "ERROR WHILE INITAITING SHELL"
-#define INIT_MSG "KiwiLexer Testing Shell.\n"
-#define FILE_ERR_MSG "\nCould not open file.\n"
-#define NO_DATA_MSG "\nNothing to print...\n"
+#define INIT_MSG "KiwiCalculator. All numbers MUST have a decimal point.\n"
 #define NOT_RECOG_MSG "\nCommand not recognized\n"
 
-#define CLEAR_CMD "clear"
-#define TOKEN_CMD "alph"
-#define PRNT_TOK_CMD "printtok"
-#define LEX_CMD "lex"
-#define PRNT_LEX_CMD "printlex"
-#define EXIT_CMD "exit"
+#define TOK_SIZE 128
+#define LEX_TOK_SIZE 512
+#define LEX_SYM_SIZE 512
+#define PARSE_SIZE 512
 
-/*Memory blocks that will be used troughout the application are
-declared here. The memory blocks used by the test shell itself to 
-parse commands are all prefixed by "dev_". All the other memory
-blocks are used to lex and parse user files.*/
-#define DEV_TOK_SIZE 256 
-#define BUF_SIZE 128
-
-/*Shell words(tokens) and productions are declared. The 
-compiler automatically concatenates strings that are together so
-macro functions will become part of the definitions.*/
-char *shellalph = "\"clear\"\"exit\"\
-\"tokenize\" \"lex\" \"printtok\" \"printlex\" \"parse\"";
-
-char *parsetxt = "alph->tokenize, CONST_STR; lex->lex, CONST_STR; \
-printtok->printtok; printlex->printlex, INT; exit->exit; clear->clear;";
-struct KiwiInput parseinput;
-
-char dev_tokmemory[DEV_TOK_SIZE]; 
-struct MemBlock dev_tokmem;
-struct AlphList *dev_tokenizer = NULL;
-
-char dev_lexmemory[DEV_TOK_SIZE];
-struct MemBlock dev_lexmem;
-struct TokenArray *dev_tokens;
-
-char dev_symbolmemory[DEV_TOK_SIZE];
-struct MemBlock dev_symmem;
-
-char dev_parsememory[DEV_TOK_SIZE];
-struct MemBlock dev_parsemem;
-struct Production *dev_parser = NULL;
-
-char dev_input[BUF_SIZE];
-struct KiwiInput dev_inputkiwi;
-struct Match dev_parsematch;
-
-#define TOK_SIZE 1440
-#define LEX_TOK_SIZE 5120
-#define LEX_SYM_SIZE 1024
-#define PARSE_SIZE 2048
+#define BUF_SIZE 256
+char input[BUF_SIZE];
+struct KiwiInput inputkiwi;
 
 char tokmemory[TOK_SIZE];
-struct MemBlock tokmem;
-struct AlphList *mem_tokenizer = NULL;
+struct MemBlock tokblock;
+struct AlphList *tokenizer = NULL;
 
 char lexmemory[LEX_TOK_SIZE];
-struct MemBlock lexmem;
+struct MemBlock lexblock;
 struct TokenArray *tokens = NULL;
 
 char symbolmemory[LEX_TOK_SIZE];
-struct MemBlock symbolmem;
+struct MemBlock symbolblock;
 
 char parsememory[PARSE_SIZE];
-struct MemBlock parsemem;
+struct MemBlock parseblock;
 struct Production *parser = NULL;
 
-struct KiwiInput fileinput;
+char *alphabet = "\"+\" \"-\" \"*\" \"/\"";
+char* productions = "SUM->DBL,+,DBL;"
+					"SUB->DBL,-,DBL;"
+					"MUL->DBL,*,DBL;"
+					"DIV->DBL,/,DBL;";
+struct KiwiInput prodtxt;
+
+double numOne;
+double numTwo;
 
 void getInput(void);
 void clearscr(void);
-void freeptr(void);
-char *readfile(char *filename, unsigned int *fsize, int sector);
+void convertNumbers(void);
 
 void main()
 {
-	/*Initialize the shell memory blocks and its alphabet and parser.
-	Boilerplate warning.*/
-	initMemory(&dev_tokmem, dev_tokmemory, DEV_TOK_SIZE);
-	initMemory(&dev_lexmem, dev_lexmemory, DEV_TOK_SIZE);
-	initMemory(&dev_symmem, dev_symbolmemory, DEV_TOK_SIZE);
-	initMemory(&dev_parsemem, dev_parsememory, DEV_TOK_SIZE);
-
-	dev_tokenizer = newAlphabet(shellalph, strlen(shellalph),
-		&dev_tokmem);
-	if (dev_tokenizer == NULL) {
-		printf("TOKENIZER ERROR. FIX ME\n");
-	}
-	else {}
-	parseinput.text = parsetxt;
-	parseinput.readSize = 0;
-	parseinput.textSize = strlen(parsetxt);
-	dev_parser = newParser(&parseinput, dev_tokenizer, &dev_parsemem,
-		&dev_symmem);
-	if (dev_parser == NULL) {
-		printf("PARSER ERROR. FIX ME\n");
-	}
-	else {}
-
-	/*Initialize memory blocks that will be used when lexing and
-	parsing the test input.*/
-	initMemory(&tokmem, tokmemory, TOK_SIZE);	
-	initMemory(&lexmem, lexmemory, LEX_TOK_SIZE);
-	initMemory(&symbolmem, symbolmemory, LEX_SYM_SIZE);
-	initMemory(&parsemem, parsememory, PARSE_SIZE);
+	initMemory(&tokblock, tokmemory, TOK_SIZE);	
+	initMemory(&lexblock, lexmemory, LEX_TOK_SIZE);
+	initMemory(&symbolblock, symbolmemory, LEX_SYM_SIZE);
+	initMemory(&parseblock, parsememory, PARSE_SIZE);
 	printf(INIT_MSG);
 
-	/*MAIN PROGRAM LOOP. PROGRAM STARTS HERE*/
-	while (1) {
-		getInput();
-		dev_parsematch = parseNext(dev_parser, dev_tokens);
-		if (dev_parsematch.id == NULL) {
-			printf(NOT_RECOG_MSG);
-		}
-		else if (strcmp(dev_parsematch.id, TOKEN_CMD) == 0) {
-			freeptr();
-			int size = 0;
-			char *alphabet = readfile((dev_tokens->token + 1)->value,
-				&size, 256);
-			if (alphabet != NULL) {
-				mem_tokenizer = newAlphabet(alphabet, size,
-					&tokmem);
-				free(alphabet);
-			}
-			else {}
-		}
-		else if (strcmp(dev_parsematch.id, PRNT_TOK_CMD) == 0) {
-			if (mem_tokenizer != NULL) {
-				printf("\n");
-				dev_printAlphabet(mem_tokenizer);
-				printf("\n");
-			}
-			else {
-				printf(NO_DATA_MSG);
-			}
-		}
-		else if (strcmp(dev_parsematch.id, LEX_CMD) == 0) {
-			if (tokens != NULL) {
-				freeMemory(&lexmem);
-				tokens = NULL;
-			}
-			clock_t initTime = clock();
-			unsigned int size = 0;
-			char *lex = readfile((dev_tokens->token + 1)->value,
-				&size, 256);
-			if (lex != NULL) {
-				fileinput.text = lex;
-				fileinput.textSize = size;
-				fileinput.readSize = 0;
-			    printf("\nLexing file... %u bytes read.\n", size);
-				tokens = lexAll(&fileinput, mem_tokenizer, &lexmem, 
-					&symbolmem);
-				clock_t stopTime = clock();
-				printf("Lexing completed. %d tokens generated"
-						"Took: %f seconds.\n", tokens->size, 
-					(double)(stopTime - initTime) / CLOCKS_PER_SEC);
-			}
-			else {}
-		}
-		else if (strcmp(dev_parsematch.id, PRNT_LEX_CMD) == 0) {
-			if (tokens != NULL) {
-				printf("\n");
-				printTokenStream(tokens, *((dev_tokens->token + 1)->value));
-				printf("\n");
-			}
-			else
-				printf(NO_DATA_MSG);
-		}
-		else if (strcmp(dev_parsematch.id, CLEAR_CMD) == 0) {
-			clearscr();
-		}
-		else if (strcmp(dev_parsematch.id, EXIT_CMD) == 0) {
-			exit(0);
-		}
-		else {
-			printf(NOT_RECOG_MSG);
-		}
+	tokenizer = newAlphabet(alphabet, strlen(alphabet), &tokblock);
 
+	prodtxt.text = productions;
+	prodtxt.textSize = strlen(productions);
+	prodtxt.readSize = 0;
+	parser = newParser(&prodtxt, tokenizer, &parseblock, &symbolblock);
+
+	/*MAIN PROGRAM LOOP. PROGRAM STARTS HERE*/
+	while (1) 
+	{
+		getInput();
+		struct Match match = parseNext(parser, tokens);
+		if (strcmp(match.id, "SUM") == 0)
+		{
+			convertNumbers();
+			printf(" = %f\n", numOne + numTwo);
+		}
+		else if (strcmp(match.id, "SUB") == 0)
+		{ 
+			convertNumbers();
+			printf(" = %f\n", numOne - numTwo);
+		}
+		else if (strcmp(match.id, "DIV") == 0)
+		{
+			convertNumbers();
+			printf(" = %f\n", numOne / numTwo);
+		}
+		else if (strcmp(match.id, "MUL") == 0)
+		{
+			convertNumbers();
+			printf(" = %f\n", numOne * numTwo);
+		}
 	}
 }
 
@@ -200,19 +100,19 @@ the pointer to the shell input as it is modified during lexing. */
 void getInput() 
 {	
 	printf("\n$> ");
-	fgets(dev_input, BUF_SIZE, stdin);
-	dev_inputkiwi.text = dev_input;
-	for (int x = 0; x < BUF_SIZE; x++) {
-		if (*(dev_input + x) == '\n') {
-			dev_inputkiwi.textSize = x + 1;
-			dev_inputkiwi.readSize = 0;
+	fgets(input, BUF_SIZE, stdin);
+	inputkiwi.text = input;
+	for (int x = 0; x < BUF_SIZE; x++) 
+	{
+		if (*(input + x) == '\n') 
+		{
+			inputkiwi.textSize = x + 1;
+			inputkiwi.readSize = 0;
 			break;
 		}
 	}
-	freeMemory(&dev_lexmem);
-	freeCleanMemory(&dev_symmem);
-	dev_tokens = lexAll(
-		&dev_inputkiwi, dev_tokenizer, &dev_lexmem, &dev_symmem);
+	tokens = lexAll(&inputkiwi, tokenizer, &lexblock, &symbolblock,
+		&dev_tokenOnlyMatch);
 }
 
 void clearscr() 
@@ -221,35 +121,9 @@ void clearscr()
 	printf(INIT_MSG);
 }
 
-void freeptr() 
+void convertNumbers()
 {
-	if (tokens != NULL) {
-		tokens = NULL;
-		freeMemory(&lexmem);
-	}
-	if (mem_tokenizer != NULL) {
-		mem_tokenizer = NULL;
-		freeMemory(&tokmem);
-	}
+	numOne = atof(tokens->token[0].value);
+	numTwo = atof(tokens->token[2].value);
 }
 
-char *readfile(char *filename, unsigned int *fsize, int sector) 
-{
-	FILE *fl = fopen(filename, "r");
-	if (fl != NULL) {
-		int count = 1;
-		char *retval = NULL;
-		do {
-			fseek(fl, 0, SEEK_SET);
-			retval = realloc(retval, count * sector);
-			*fsize = fread(retval, 1, sector * count, fl);
-			count++;
-		} while (feof(fl) == 0);
-		fclose(fl);
-		retval = realloc(retval, *fsize);
-		return retval;
-	}
-	else
-		printf(FILE_ERR_MSG);
-		return NULL;
-}

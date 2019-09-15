@@ -8,6 +8,11 @@ char *CONST_STRING_ID = "CONST_STR";
 char *ERR_ID = "KNME"; 
 char *EOF_ID = "KEOF";
 
+/*Load production dev_alphparser into memory. This is the alphabet
+used to parse files that denote grammatical productions.*/
+struct AlphList dev_parsertok = { PROD_SIGNAL, NULL };
+struct AlphList dev_alphparser = { PROD_END, &dev_parsertok };
+
 /*
 Literal strings can be modified and are not constant,
 even if the behavior is undefined and attempting to modify one
@@ -27,23 +32,36 @@ returns cero if no match is found.
 */
 char isNumber(char *value, int size)
 {
+	uint8_t pointflag = 0;
+	uint8_t minusflag = 0;
 	if (size <= 0)
+	{
 		return 0;
-
-	int pointflag = 0;
-	int minusflag = 0;
+	}
+	else if(size == 1)
+	{
+		if (isdigit(value[0]) == 0)
+		{
+			return 0;
+		}
+		else
+		{
+			return INT_TYPE;
+		}
+	}
+	else {}
 	for (int x = 0; x < size; x++) {
-		if (*(value + x) == '.') {
+		if (value[x] == '.') {
 			pointflag++;
 			if (pointflag > 1)
 				return 0;
 		}
-		else if (*(value + x) == '-') {
+		else if (value[x] == '-') {
 			minusflag++;
 			if (minusflag > 1)
 				return 0;
 		}
-		else if (isdigit(*(value + x)) == 0) {
+		else if (isdigit(value[x]) == 0) {
 			return 0;
 		}
 	}
@@ -327,10 +345,10 @@ char *dev_symbolTableContains(char *value, size_t size, struct MemBlock *mem)
 Tries to match a char stream of n size ONLY with the tokens found inside
 the tokenizer.
 */
-char *dev_tokenOnlyMatch(char *word, int wrdsize, 
-	struct AlphList *tok)
+char *dev_tokenOnlyMatch(char *word, int wrdsize, struct AlphList *tok)
 {
 	while (tok != NULL) {
+		//No, you can't use strcmp because word is not NUL terminated.
 		if ((strncmp(tok->value, word, wrdsize) == 0) &&
 			(strlen(tok->value) == wrdsize)) {
 			return tok->value;
@@ -340,6 +358,19 @@ char *dev_tokenOnlyMatch(char *word, int wrdsize,
 		}
 	}
 	return ERR_ID;
+}
+
+/*Tries to match a char stream of n size ONLY  with the tokens
+found inside the tokenizer and the tokens used to parse productions. 
+(PROD_SIGNAL and PROD_END).*/
+char *dev_parsetokenOnlyMatch(char *word, int wrdsize, struct AlphList *tok)
+{
+	char *retval = dev_tokenOnlyMatch(word, wrdsize, tok);
+	if(strcmp(retval, ERR_ID) == 0)
+	{
+		retval = dev_tokenOnlyMatch(word, wrdsize, &dev_alphparser);
+	}
+	return retval;
 }
 
 /*
@@ -353,7 +384,8 @@ memory allocation fails during the lexing a NULL pointer is returned
 and the token is not consumed.
 */
 struct Token lexNext(struct KiwiInput *input,
-	struct AlphList *tokenizer, struct MemBlock *mem)
+	struct AlphList *tokenizer, struct MemBlock *mem,
+	char *(*matcher)(char *word, int wrdsize, struct AlphList *alph))
 {
 	/*
 	0x00 means there is no match.
@@ -388,7 +420,7 @@ struct Token lexNext(struct KiwiInput *input,
 			}
 		}
 		else {}
-		nextToken = dev_tokenOnlyMatch(input->text, nsize, tokenizer);
+		nextToken = matcher(input->text, nsize, tokenizer);
 		if (strcmp(nextToken, ERR_ID) != 0) {
 			matchflag = 0xAA;
 			prevToken = nextToken;
@@ -439,7 +471,8 @@ Lexes the whole dev_input by repeteadly calling "lexNext".
 */
 struct TokenArray *lexAll(struct KiwiInput *input,
 	struct AlphList *tok, struct MemBlock *tokenmem, 
-	struct MemBlock *symbolmem)
+	struct MemBlock *symbolmem,
+	char *(*matcher)(char *word, int wrdsize, struct AlphList *alph))
 {
 	struct TokenArray *retval = kimalloc(sizeof(struct TokenArray),
 		tokenmem);
@@ -455,7 +488,7 @@ struct TokenArray *lexAll(struct KiwiInput *input,
 	struct Token token;
 	char append;
 	while (1) {
-		token = lexNext(input, tok, symbolmem);
+		token = lexNext(input, tok, symbolmem, (*matcher));
 		if ((strcmp(token.type, EOF_ID) == 0) ||
 			(strcmp(token.type, ERR_ID) == 0)) {
 			return retval;

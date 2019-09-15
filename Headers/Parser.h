@@ -2,11 +2,6 @@
 #include "Tokenizer.h"
 #include "Memory.h"
 
-#define PROD_SIGNAL "->"
-#define PROD_END ";"
-
-extern struct AlphList dev_parsertok;
-extern struct AlphList dev_alphparser;
 
 struct Production {
 	char *name;
@@ -31,6 +26,6 @@ struct Production *dev_newProduction(struct KiwiInput *input,
 	struct MemBlock *lexmem);
 struct Production *newParser(struct KiwiInput *input,
 	struct AlphList *alphabet, struct MemBlock *parsemem,
-	struct MemBlock *lexmem);
+	struct MemBlock *symbolmem);
 struct Match parseNext(struct Production *parser, 
 	struct TokenArray *tokens);
