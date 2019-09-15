@@ -34,6 +34,7 @@ char isNumber(char *value, int size)
 {
 	uint8_t pointflag = 0;
 	uint8_t minusflag = 0;
+	uint8_t plusflag = 0;
 	if (size <= 0)
 	{
 		return 0;
@@ -49,22 +50,30 @@ char isNumber(char *value, int size)
 			return INT_TYPE;
 		}
 	}
-	else {}
-	for (int x = 0; x < size; x++)
+	else {
+		if (value[0] == '.')
+		{
+			pointflag++;
+		}
+		else if ((value[0] != '-') && (value[0] != '+') && 
+			isdigit(value[0]) == 0) 
+		{
+			return 0;
+		}
+	}
+	for (int x = 1; x < size; x++)
 	{
-		if (value[x] == '.')
+		if (isdigit(value[x]) != 0)
+		{
+			continue;
+		}
+		else if (value[x] == '.')
 		{
 			pointflag++;
 			if (pointflag > 1)
 				return 0;
 		}
-		else if (value[x] == '-')
-		{
-			minusflag++;
-			if (minusflag > 1)
-				return 0;
-		}
-		else if (isdigit(value[x]) == 0)
+		else
 		{
 			return 0;
 		}
