@@ -104,9 +104,9 @@ void getInput()
 	inputkiwi.text = input;
 	for (int x = 0; x < BUF_SIZE; x++) 
 	{
-		if (*(input + x) == '\n') 
+		if (input[x] == '\n') 
 		{
-			inputkiwi.textSize = x + 1;
+			inputkiwi.textSize = x;
 			inputkiwi.readSize = 0;
 			break;
 		}

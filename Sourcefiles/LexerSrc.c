@@ -85,7 +85,7 @@ char isString(char *value, int size)
 		return 0;
 
 	for (int x = 0; x < size; x++) {
-		if ((isalpha(*(value + x)) == 0) && (*(value + x) != '_'))
+		if ((isalpha(value[x]) == 0) && (value[x] != '_'))
 			return 0;
 	}
 	return 1;
@@ -101,29 +101,38 @@ char isLiteral(char *value, int size)
 {
     char delimitor;
 	if (size <= 1)
+	{
 		return 0;
-		
-	if (*value == '"') {
+	}
+
+	if (*value == '"') 
+	{
 	    delimitor = '"';
     }
-    else if (*value == '\'') {
+    else if (*value == '\'') 
+	{
         delimitor = '\'';
     }
     else return 0;
     
     /*If the end of the string is not equal to the delimitor or the
     delimitor is escaped by a backlash which is not escaped.*/
-    if ((*(value + size) != delimitor)) {
+    if (value[size - 1] != delimitor) {
         return 0;
     }
-    if ((*(value + size - 2) == '\\')) {
+    if (value[size -2] == '\\') {
+		/*The backslash could be backlashed itself which means
+		its not really cancelling out the delimitor*/
         if (size < 4) {
+			/*If the size is smaller than 4 there can only be two
+			delimitors and one backslash which means the backlash
+			is not backlashed.*/
             return 0;
         }
         else {
             int slashcount = 1;
             for(int x = size - 3; x > 0; x--) {
-                if (*(value + x) == '\\') {
+                if (value[x] == '\\') {
                     slashcount++;
                 }     
                 else {
@@ -136,6 +145,7 @@ char isLiteral(char *value, int size)
     }
     
     value++;
+	//Make sure any delimitor inside the string is backlashed.
     for (int x = 1; x < (size - 1); x++, value++) {
         if((*value == delimitor) && (*(value - 1) != '\\'))
             return 0;
