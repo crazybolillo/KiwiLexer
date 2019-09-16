@@ -166,31 +166,33 @@ first have precedence over productions later on inside the Parser
 struct Match parseNext(struct Production *parser, 
 	struct TokenArray *tokens)
 {
-	uint8_t matchsize = 0;
+	//Defautl values
+	struct Match retval;
+	retval.id = ERR_ID;
+	retval.size = 0;
+
 	char *prodname = ERR_ID;
 	struct Production *tmphead = parser;
 	while (parser != NULL) {
-		if ((matchsize < parser->rulesize) && 
+		if ((retval.size < parser->rulesize) && 
 			(parser->rulesize <= tokens->size)) {
 			for (uint8_t x = 0; x < parser->rulesize; x++) {
-				const char *rule = *(parser->rules + x);
-				const char *token = (tokens->token + x)->type;
+				const char *rule = parser->rules[x];
+				const char *token = tokens->token[x].type;
 				if (strcmp(rule, token) != 0) {
 					goto __nextloop__;
 				}
-				else {}
+				else {
+					continue;
+				}
 			}
-			matchsize = parser->rulesize;
-			prodname = parser->name;
+			retval.size = parser->rulesize;
+			retval.id = parser->name;
 		}
 		else {}
 		__nextloop__:
 		parser = parser->next;
 	}
 	parser = tmphead;
-
-	struct Match retval;
-	retval.id = prodname;
-	retval.size = matchsize;
 	return retval;
 }

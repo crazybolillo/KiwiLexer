@@ -3,6 +3,7 @@
 #include "Parser.h"
 #include <time.h>
 #include <stdio.h>
+#include <math.h>
 
 //Define clear command for both Windows and Linux platforms.
 #define CLEAR_COMAND "clear"
@@ -38,28 +39,61 @@ char parsememory[PARSE_SIZE];
 struct MemBlock parseblock;
 struct Production *parser = NULL;
 
-char *alphabet = "\"+\" \"-\" \"*\" \"/\"";
-char* productions = "SUM->DBL,+,DBL;"
-					"SUB->DBL,-,DBL;"
-					"MUL->DBL,*,DBL;"
-					"DIV->DBL,/,DBL;";
+char *alphabet = "\"+\" \"-\" \"*\" \"/\" \"^\" \"sqrt\"";
+char* productions = "SUM->DBL, +;"
+					"SUB->DBL, -;"
+					"DIV->DBL, /;"
+					"MUL->DBL, *;"
+					"POW->DBL, ^;"
+					"SQR->sqrt, DBL;"
+					"NUM->DBL;";
 struct KiwiInput prodtxt;
 
 double numOne;
 double numTwo;
+double numThree;
 
 void getInput(void);
 void clearscr(void);
-void convertNumbers(void);
+
+/*-----------
+Items dedicated to processing Matches in order to respect
+the operations hierarchy
+--------------*/
+#define MATCH_SIZE 512
+char matchmem[MATCH_SIZE];
+struct MemBlock matchblock;
+
+struct Number
+{
+	double value;
+	char operation;
+};
+
+struct NumberArray
+{
+	struct Number *num;
+	uint8_t size;
+};
+
+const uint8_t MAX_POS = 1; //^ and sqrt
+const uint8_t MED_POS = 2; // * and /
+const uint8_t MIN_POS = 3; // + and -
+
+uint8_t getHierarchy(char operation);
+struct Number joinNumber(struct Number* num, struct Number* numtw);
+struct Number *convertToNumber(struct Match match, struct MemBlock *mem);
 
 void main()
 {
+	//Iniitalize memory blocks
 	initMemory(&tokblock, tokmemory, TOK_SIZE);	
 	initMemory(&lexblock, lexmemory, LEX_TOK_SIZE);
 	initMemory(&symbolblock, symbolmemory, LEX_SYM_SIZE);
 	initMemory(&parseblock, parsememory, PARSE_SIZE);
-	printf(INIT_MSG);
+	initMemory(&matchblock, matchmem, MATCH_SIZE);
 
+	//Load alphabet and parser
 	tokenizer = newAlphabet(alphabet, strlen(alphabet), &tokblock);
 
 	prodtxt.text = productions;
@@ -68,30 +102,43 @@ void main()
 	parser = newParser(&prodtxt, tokenizer, &parseblock, &lexblock);
 
 	/*MAIN PROGRAM LOOP. PROGRAM STARTS HERE*/
+	printf(INIT_MSG);
 	while (1) 
 	{
 		getInput();
-		struct Match match = parseNext(parser, tokens);
-		if (strcmp(match.id, "SUM") == 0)
+
+		struct Match match;
+		struct NumberArray numarray;
+		numarray.num = (struct Number*)matchmem;
+		numarray.size = 0;
+
+		while(tokens->size > 0)
 		{
-			convertNumbers();
-			printf(" = %f\n", numOne + numTwo);
+			match = parseNext(parser, tokens);
+			if (strcmp(match.id, "NUM") == 0)
+			{
+				struct Number *num= kimalloc(sizeof(struct Number),
+					&matchblock);
+				num->value = atoi(tokens->token->value);
+				num->operation = '0';
+			}
+			else if (strcmp(match.id, ERR_ID) != 0)
+			{
+				convertToNumber(match, &matchblock);
+			}
+			else {
+				break;
+			}
+			(tokens)->token += match.size;
+			tokens->size -= match.size;
+			numarray.size++;
 		}
-		else if (strcmp(match.id, "SUB") == 0)
-		{ 
-			convertNumbers();
-			printf(" = %f\n", numOne - numTwo);
-		}
-		else if (strcmp(match.id, "DIV") == 0)
+		for (int x = 0; x < numarray.size; x++)
 		{
-			convertNumbers();
-			printf(" = %f\n", numOne / numTwo);
+			printf("\n%f %c ", numarray.num[x].value, 
+				numarray.num[x].operation);
 		}
-		else if (strcmp(match.id, "MUL") == 0)
-		{
-			convertNumbers();
-			printf(" = %f\n", numOne * numTwo);
-		}
+		puts("");
 	}
 }
 
@@ -112,6 +159,7 @@ void getInput()
 		}
 	}
 	freeMemory(&lexblock);
+	freeMemory(&matchblock);
 	tokens = lexAll(&inputkiwi, tokenizer, &lexblock, &symbolblock,
 		&dev_tokenOnlyMatch);
 }
@@ -122,9 +170,67 @@ void clearscr()
 	printf(INIT_MSG);
 }
 
-void convertNumbers()
+//--------
+//FUNCTIONS RELATED TO PROCESSING MATCHES
+//--------
+uint8_t getHierarchy(char operation)
 {
-	numOne = atof(tokens->token[0].value);
-	numTwo = atof(tokens->token[2].value);
+	if (operation == '-' || operation == '+')
+	{
+		return MIN_POS;
+	}
+	else if (operation == '*' || operation == '/')
+	{
+		return MED_POS;
+	}
+	else if (operation == '^' || operation == '&') //& = sqrt
+	{
+		return MAX_POS;
+	}
+	else return 0;
+}
+
+/*
+BOILER PLATE AHEAD
+Joins two numbers by performing the operation of the first number
+and leaving the result with the operation of the second number.
+Eg: 5 x 7 x 9
+Joining the first two numbers == 35 x 9*/
+struct Number joinNumber(struct Number *num, struct Number *numtw)
+{
+	struct Number retval;
+	retval.operation = numtw->operation;
+	if (num->operation == '+') 
+	{
+		retval.value = num->value += numtw->value;
+	}
+	else if (num->operation == '-')
+	{
+		retval.value = num->value -= numtw->value;
+	}
+	else if (num->operation == '*')
+	{
+		retval.value = num->value *= numtw->value;
+	}
+	else if (num->operation == '/')
+	{
+		retval.value = num->value /= numtw->value;
+	}
+	else if (num->operation == '^')
+	{
+		retval.value = pow(num->value, numtw->value);
+	}
+	return retval;
+}
+
+struct Number* convertToNumber(struct Match match, struct MemBlock *mem)
+{
+	struct Number *retval = kimalloc(sizeof(struct Number), mem);
+	if (retval != NULL) 
+	{ 
+		retval->value = atoi(tokens->token->value);
+		retval->operation = *(tokens->token[1].value);
+	}
+	return retval;
 }
 

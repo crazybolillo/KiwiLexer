@@ -508,6 +508,7 @@ struct TokenArray *lexAll(struct KiwiInput *input,
 	get a reference to the beginning of the array but this method
 	is faster.*/
 	retval->token = (struct Token *)tokenmem->memory;
+	retval->size = 0;
 	struct Token token;
 	char append;
 	while (1) {
