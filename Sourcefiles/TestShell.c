@@ -39,13 +39,13 @@ char parsememory[PARSE_SIZE];
 struct MemBlock parseblock;
 struct Production *parser = NULL;
 
-char *alphabet = "\"+\" \"-\" \"*\" \"/\" \"^\" \"sqrt\"";
+char *alphabet = "\"+\" \"-\" \"*\" \"/\" \"^\" \"&\"";
 char* productions = "SUM->DBL, +;"
 					"SUB->DBL, -;"
 					"DIV->DBL, /;"
 					"MUL->DBL, *;"
 					"POW->DBL, ^;"
-					"SQR->sqrt, DBL;"
+					"SQR->DBL, &;"
 					"NUM->DBL;";
 struct KiwiInput prodtxt;
 
@@ -117,10 +117,17 @@ void main()
 			match = parseNext(parser, tokens);
 			if (strcmp(match.id, "NUM") == 0)
 			{
-				struct Number *num= kimalloc(sizeof(struct Number),
+				struct Number *num = kimalloc(sizeof(struct Number),
 					&matchblock);
 				num->value = atoi(tokens->token->value);
 				num->operation = '0';
+			}
+			else if (strcmp(match.id, "SQR") == 0)
+			{
+				struct Number* num = kimalloc(sizeof(struct Number),
+					&matchblock);
+				num->value = atoi(tokens->token[1].value);
+				num->operation = '&';
 			}
 			else if (strcmp(match.id, ERR_ID) != 0)
 			{
