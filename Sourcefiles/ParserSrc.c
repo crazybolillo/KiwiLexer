@@ -1,10 +1,5 @@
 #include "Parser.h"
 
-/*Load production dev_alphparser into memory. This is the alphabet 
-used to parse files that denote grammatical productions.*/
-struct AlphList dev_parsertok = { PROD_SIGNAL, NULL };
-struct AlphList dev_alphparser = { PROD_END, &dev_parsertok };
-
 /*
 Creates the head for the production. This involves allocating the string
 that should be returned whenever the rules for this production are met
@@ -57,12 +52,14 @@ struct Production *dev_newProduction(struct KiwiInput *input,
 	int appendres;
 	struct Token token;
 
-	token = lexNext(input, &dev_alphparser, lexmem);
+	//Lex the name of the production.
+	token = lexNext(input, &dev_alphparser, lexmem, &dev_tokenOnlyMatch);
 	if (strcmp(token.type, STRING_ID) != 0) {
 		return NULL;
 	}
 	else {}
 
+	//Try to allocate memory for it.
 	retval = dev_newProHead(token.value, strlen(token.value), parsemem);
 	if (retval == NULL) {
 		return NULL;
@@ -70,7 +67,7 @@ struct Production *dev_newProduction(struct KiwiInput *input,
 	else {}
 	retval->rules = (char **)parsemem->memory;
 
-	token = lexNext(input, &dev_alphparser, lexmem);
+	token = lexNext(input, &dev_alphparser, lexmem, &dev_tokenOnlyMatch);
 	if (strcmp(token.type, PROD_SIGNAL) != 0) {
 		freeMemory(parsemem);
 		return NULL;
@@ -78,7 +75,7 @@ struct Production *dev_newProduction(struct KiwiInput *input,
 	else {}
 
 	__rulelexstart__:
-	token = lexNext(input, &dev_alphparser, lexmem);
+	token = lexNext(input, alphabet, lexmem, &dev_parsetokenOnlyMatch);
 	gramptr = dev_alphabetContains(token.value, alphabet);
 	if (gramptr != NULL) {
 		appendres = dev_addRule(gramptr, parsemem, retval);
@@ -156,11 +153,12 @@ struct Production *newParser(struct KiwiInput *input,
 	}
 }
 
+
 /*
 Compares the array of tokens with all the diferent productions inside
 the dev_alphparser and returns the production name and its size in tokens.
 Bigger productions are preffered over smaller ones so if a match has
-been already been found and the next production has less lexemes
+been already found and the next production has less lexemes
 or components it will be skipped(not analyzed). Productions that appear
 first have precedence over productions later on inside the Parser 
 (a LinkedList)
@@ -168,31 +166,33 @@ first have precedence over productions later on inside the Parser
 struct Match parseNext(struct Production *parser, 
 	struct TokenArray *tokens)
 {
-	uint8_t matchsize = 0;
-	char *prodname = NULL;
+	//Defautl values
+	struct Match retval;
+	retval.id = ERR_ID;
+	retval.size = 0;
+
+	char *prodname = ERR_ID;
 	struct Production *tmphead = parser;
 	while (parser != NULL) {
-		if ((matchsize < parser->rulesize) && 
+		if ((retval.size < parser->rulesize) && 
 			(parser->rulesize <= tokens->size)) {
 			for (uint8_t x = 0; x < parser->rulesize; x++) {
-				const char *rule = *(parser->rules + x);
-				const char *token = (tokens->token + x)->type;
+				const char *rule = parser->rules[x];
+				const char *token = tokens->token[x].type;
 				if (strcmp(rule, token) != 0) {
 					goto __nextloop__;
 				}
-				else {}
+				else {
+					continue;
+				}
 			}
-			matchsize = parser->rulesize;
-			prodname = parser->name;
+			retval.size = parser->rulesize;
+			retval.id = parser->name;
 		}
 		else {}
 		__nextloop__:
 		parser = parser->next;
 	}
 	parser = tmphead;
-
-	struct Match retval;
-	retval.id = prodname;
-	retval.size = matchsize;
 	return retval;
 }

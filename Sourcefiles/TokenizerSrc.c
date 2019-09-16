@@ -42,10 +42,14 @@ struct AlphList *dev_newLexeme(char *id, int idsize,
 	struct AlphList *retval = kimalloc(sizeof(struct AlphList),
 		mem);
 	if (retval == NULL)
+	{
 		return NULL;
+	}
 	retval->value = kicalloc(sizeof(char) * (idsize + 1), mem);
 	if (retval->value == NULL)
+	{
 		return NULL;
+	}
 	memcpy(retval->value, id, idsize);
 	retval->next = NULL;
 	return retval;

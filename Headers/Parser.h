@@ -2,11 +2,6 @@
 #include "Tokenizer.h"
 #include "Memory.h"
 
-#define PROD_SIGNAL "->"
-#define PROD_END ";"
-
-extern struct AlphList dev_parsertok;
-extern struct AlphList dev_alphparser;
 
 struct Production {
 	char *name;

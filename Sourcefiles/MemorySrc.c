@@ -19,7 +19,7 @@ of memory. Memory allocated is NOT cleaned so it may be full of trash.
 */
 void *kimalloc(size_t size, struct MemBlock *mem)
 {
-	if (size + mem->used > mem->memsize) {
+	if ((size + (mem->used)) > (mem->memsize)) {
 		return NULL;
 	}
 	else {
@@ -37,7 +37,7 @@ of memory. Memory allocade is GUARANTEED to be set to 0x00.
 */
 void *kicalloc(size_t size, struct MemBlock *mem)
 {
-	if (size + mem->used > mem->memsize) {
+	if ((size + (mem->used)) > (mem->memsize)) {
 		return NULL;
 	}
 	else {

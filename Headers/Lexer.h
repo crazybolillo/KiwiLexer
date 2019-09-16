@@ -16,6 +16,12 @@ extern char *MIX_STRING_ID;
 extern char *ERR_ID;
 extern char *EOF_ID;
 
+#define PROD_SIGNAL "->"
+#define PROD_END ";"
+
+extern struct AlphList dev_parsertok;
+extern struct AlphList dev_alphparser;
+
 #define BUILT_IN_AMNT 4
 extern char **BUILT_IN_TYPES[];
 
@@ -61,10 +67,14 @@ char dev_appendToken(struct TokenArray *stream, struct Token node,
 	struct MemBlock *mem);
 char *dev_tokenOnlyMatch(char *word, int wrdize, 
 	struct AlphList *tokenizer);
+char* dev_parsetokenOnlyMatch(char* word, int wrdsize,
+	struct AlphList* tokenizer);
 struct Token lexNext(struct KiwiInput *input,
-	struct AlphList *tokenizer, struct MemBlock *mem);
+	struct AlphList *tokenizer, struct MemBlock *mem, 
+	char *(*matcher)(char *word, int wrdsize, struct AlphList *alph));
 struct TokenArray *lexAll(struct KiwiInput *input,
 	struct AlphList *tok, struct MemBlock *tokenmem, 
-	struct MemBlock *symbolmem);
+	struct MemBlock *symbolmem,
+	char *(*matcher)(char *word, int wrdsize, struct AlphList *alph));
 
 #endif
