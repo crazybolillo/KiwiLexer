@@ -224,17 +224,17 @@ struct Token dev_newValToken(char *type, char *value, int valsize,
 	struct Token retval;
 	retval.type = type;
 	retval.value = dev_symbolTableContains(value, valsize, mem);
-	if (retval.value == NULL) {
+	if (retval.value == NULL) 
+	{
 		retval.value = kicalloc(sizeof(char) * valsize + 1, mem);
-		if (retval.value == NULL) {
+		if (retval.value == NULL)
+		{
 			return dev_newTypeToken(ERR_ID);
 		}
-	}
-	if (strcmp(type, CONST_STRING_ID) == 0) {
-		memcpy(retval.value, value + 1, valsize - 1);
-	}
-	else {
-		memcpy(retval.value, value, valsize);
+		else
+		{
+			memcpy(retval.value, value, valsize);
+		}
 	}
 	return retval;
 }
@@ -302,7 +302,8 @@ char dev_appendToken(struct TokenArray *stream, struct Token node,
 	if (tok == NULL) {
 		return 0;
 	}
-	*tok = node;
+	tok->type = node.type;
+	tok->value = node.value;
 	stream->size++;
 	return 1;
 }
@@ -311,9 +312,7 @@ char dev_appendToken(struct TokenArray *stream, struct Token node,
 Iterates troughout the symbol table to see if the symbol has already 
 been allocated in memory. If it has been allocated in memory it 
 returns a pointer to the first element (char) of the symbol (string). 
-Strings are NUL terminated and the end of valid strings is signaled
-by two NUL (0x00) characters one after the other. If the symbol has
-not been allocated it returns NULL.
+If the symbol has not been allocated it returns NULL.
 */
 char *dev_symbolTableContains(char *value, size_t size, struct MemBlock *mem) 
 {
@@ -321,46 +320,32 @@ char *dev_symbolTableContains(char *value, size_t size, struct MemBlock *mem)
 		return NULL;
 	}
 	char *limit = mem->memory + ((mem->memsize - mem->used) - 1);
-	char *string = mem->memory - mem->used;
+	/*Beginning of string. Saved because this is what will be returned if
+	there is a match*/
+	char *string = mem->memory - mem->used; 
 	if (*string == 0x00) {
 		return NULL;
 	}
-	char *lookahead = string;
-	size_t x = 0;
-	while(1){
-		for (; (x < size) && (lookahead <= limit);
-			x++, lookahead++, value++) {
-			if (*lookahead != *value) {
-				SKIP_NUL_LIMIT(lookahead, limit);
-				if (NUL_OR_LIMIT(lookahead, limit)) {
-					return NULL;
-				}
-				else {
-					lookahead++;
-					string = lookahead;
-					value -= x;
-					x = 0;
-					continue;
-				}
-			}
-		}
-		if (*lookahead == 0x00) {
+	size_t index = 0;
+	while(index < mem->memsize)
+	{
+		if((strncmp(string, value, size) == 0) &&
+			(strlen(string) == size))
+		{
 			return string;
 		}
 		else {
-			SKIP_NUL_LIMIT(lookahead, limit);
-			if (NUL_OR_LIMIT(lookahead, limit)) {
-				return NULL;
+			while((*string != 0x00) && (index < mem->memsize))
+			{
+				string++;
+				index++;
 			}
-			else {
-				lookahead++;
-				string = lookahead;
-				value -= size;
-				x = 0; 
-				continue;
-			}
+			string++; /*Points to start of new string. If its NULL then
+			its there are no more strings.*/
+			if(*string == 0x00) return NULL;
 		}
 	}
+	return NULL;
 }
 
 
@@ -502,11 +487,6 @@ struct TokenArray *lexAll(struct KiwiInput *input,
 	if (retval == NULL) {
 		return NULL;
 	}
-	/*The rest of tokenmem will work as the array of tokens. The
-	beginning of the array will be the current pointer inside the
-	memory block. Memory could be requested and then popped to 
-	get a reference to the beginning of the array but this method
-	is faster.*/
 	retval->token = (struct Token *)tokenmem->memory;
 	retval->size = 0;
 	struct Token token;

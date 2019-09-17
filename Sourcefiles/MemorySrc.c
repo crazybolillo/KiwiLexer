@@ -61,16 +61,6 @@ void freeMemory(struct MemBlock *mem)
 }
 
 /*
-Resets the memory block so that memory can be reused. It does DELETE previous
-information that was stored and sets everything to 0x00.
-*/
-void freeCleanMemory(struct MemBlock *mem)
-{
-	memset(mem->memory, 0x00, mem->used);
-	freeMemory(mem);
-}
-
-/*
 Resets part of the memory block from right to left (newest memory is freed
 first). The amount of memory to be resetted has to be passed trough the
 parameters.
