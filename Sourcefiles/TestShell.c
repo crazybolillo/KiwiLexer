@@ -39,14 +39,15 @@ char parsememory[PARSE_SIZE];
 struct MemBlock parseblock;
 struct Production *parser = NULL;
 
-char *alphabet = "\"+\" \"-\" \"*\" \"/\" \"^\" \"&\"";
+char *alphabet = "\"+\" \"-\" \"*\" \"/\" \"^\" \"&\" \"clear\"";
 char* productions = "SUM->DBL, +;"
 					"SUB->DBL, -;"
 					"DIV->DBL, /;"
 					"MUL->DBL, *;"
 					"POW->DBL, ^;"
 					"SQR->DBL, &;"
-					"NUM->DBL;";
+					"NUM->DBL;"
+					"clear->clear;";
 struct KiwiInput prodtxt;
 
 double numOne;
@@ -76,13 +77,15 @@ struct NumberArray
 	uint8_t size;
 };
 
-const uint8_t MAX_POS = 1; //^ and sqrt
+const uint8_t MAX_POS = 3; //^ and sqrt
 const uint8_t MED_POS = 2; // * and /
-const uint8_t MIN_POS = 3; // + and -
+const uint8_t MIN_POS = 1; // + and -
 
 uint8_t getHierarchy(char operation);
-struct Number joinNumber(struct Number* num, struct Number* numtw);
+struct Number joinNumber(struct Number *num, struct Number *numtw);
 struct Number *convertToNumber(struct Match match, struct MemBlock *mem);
+void simplifyExpression(struct NumberArray *nums);
+void joinArray(struct NumberArray *nums, uint8_t index);
 
 void main()
 {
@@ -105,6 +108,7 @@ void main()
 	printf(INIT_MSG);
 	while (1) 
 	{
+		__start__:
 		getInput();
 
 		struct Match match;
@@ -115,28 +119,24 @@ void main()
 		while(tokens->size > 0)
 		{
 			match = parseNext(parser, tokens);
-			if (strcmp(match.id, "NUM") == 0)
+			if(strcmp(match.id, "clear") == 0)
+			{
+				clearscr();
+				goto __start__;
+			}
+			else if (strcmp(match.id, "NUM") == 0)
 			{
 				struct Number *num = kimalloc(sizeof(struct Number),
 					&matchblock);
 				num->value = atoi(tokens->token->value);
 				num->operation = '0';
 			}
-			else if (strcmp(match.id, "SQR") == 0)
-			{
-				struct Number* num = kimalloc(sizeof(struct Number),
-					&matchblock);
-				num->value = atoi(tokens->token[1].value);
-				num->operation = '&';
-			}
 			else if (strcmp(match.id, ERR_ID) != 0)
 			{
 				convertToNumber(match, &matchblock);
 			}
-			else {
-				break;
-			}
-			(tokens)->token += match.size;
+			else {}
+			tokens->token += match.size;
 			tokens->size -= match.size;
 			numarray.size++;
 		}
@@ -146,6 +146,8 @@ void main()
 				numarray.num[x].operation);
 		}
 		puts("");
+		simplifyExpression(&numarray);
+		printf("RESULT ---> %f\n", numarray.num->value);
 	}
 }
 
@@ -166,6 +168,7 @@ void getInput()
 		}
 	}
 	freeMemory(&lexblock);
+	freeMemory(&symbolblock);
 	freeMemory(&matchblock);
 	tokens = lexAll(&inputkiwi, tokenizer, &lexblock, &symbolblock,
 		&dev_tokenOnlyMatch);
@@ -207,30 +210,34 @@ struct Number joinNumber(struct Number *num, struct Number *numtw)
 {
 	struct Number retval;
 	retval.operation = numtw->operation;
-	if (num->operation == '+') 
+	if(num->operation == '+') 
 	{
 		retval.value = num->value += numtw->value;
 	}
-	else if (num->operation == '-')
+	else if(num->operation == '-')
 	{
 		retval.value = num->value -= numtw->value;
 	}
-	else if (num->operation == '*')
+	else if(num->operation == '*')
 	{
 		retval.value = num->value *= numtw->value;
 	}
-	else if (num->operation == '/')
+	else if(num->operation == '/')
 	{
 		retval.value = num->value /= numtw->value;
 	}
-	else if (num->operation == '^')
+	else if(num->operation == '^')
 	{
 		retval.value = pow(num->value, numtw->value);
+	}
+	else if(num->operation == '&')
+	{
+		retval.value = pow(num->value, (1.0 / numtw->value));
 	}
 	return retval;
 }
 
-struct Number* convertToNumber(struct Match match, struct MemBlock *mem)
+struct Number *convertToNumber(struct Match match, struct MemBlock *mem)
 {
 	struct Number *retval = kimalloc(sizeof(struct Number), mem);
 	if (retval != NULL) 
@@ -239,5 +246,44 @@ struct Number* convertToNumber(struct Match match, struct MemBlock *mem)
 		retval->operation = *(tokens->token[1].value);
 	}
 	return retval;
+}
+
+void simplifyExpression(struct NumberArray *nums)
+{
+	uint8_t index = 0;
+	struct Number numOne;
+	uint8_t posOne;
+
+	struct Number numTwo;
+	uint8_t posTwo;
+
+	while((index + 1) < nums->size)
+	{
+		numOne = nums->num[index];
+		numTwo = nums->num[index + 1];
+		
+		posOne = getHierarchy(numOne.operation);
+		posTwo = getHierarchy(numTwo.operation);
+
+		if(posOne >= posTwo)
+		{
+			numOne = joinNumber(&numOne, &numTwo);
+			nums->num[index] = numOne;
+			joinArray(nums, index);
+			index = 0;
+		}
+		else {
+			index++;
+		}
+	}
+}
+
+void joinArray(struct NumberArray *nums, uint8_t index)
+{
+	for(uint8_t x = index + 2; x < nums->size; x++) 
+	{
+		nums->num[x - 1] = nums->num[x];
+	}
+	nums->size--;
 }
 
