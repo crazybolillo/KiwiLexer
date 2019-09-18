@@ -5,7 +5,7 @@ INC = -I Headers -g -Q -v
 VPATH = Sourcefiles
 
 TestShell: MemorySrc.o TokenizerSrc.o LexerSrc.o ParserSrc.o
-	$(CC) -o TestShell MemorySrc.o TokenizerSrc.o LexerSrc.o ParserSrc.o $(VPATH)/TestShell.c $(INC)
+	$(CC) -o TestShell MemorySrc.o TokenizerSrc.o LexerSrc.o ParserSrc.o $(VPATH)/TestShell.c $(INC) -lm
 
 MemorySrc.o: MemorySrc.c 
 	$(CC) $(VPATH)/MemorySrc.c $(INC) -c

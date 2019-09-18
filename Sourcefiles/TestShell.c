@@ -15,7 +15,7 @@
 #define INIT_MSG "KiwiCalculator. All numbers MUST have a decimal point.\n"
 #define NOT_RECOG_MSG "\nCommand not recognized\n"
 
-#define TOK_SIZE 128
+#define TOK_SIZE 152
 #define LEX_TOK_SIZE 512
 #define LEX_SYM_SIZE 512
 #define PARSE_SIZE 512
@@ -108,11 +108,11 @@ void main()
 	printf(INIT_MSG);
 	while (1) 
 	{
-		__start__:
-		getInput();
-
 		struct Match match;
 		struct NumberArray numarray;
+
+		__start__:
+		getInput();
 		numarray.num = (struct Number*)matchmem;
 		numarray.size = 0;
 
@@ -135,7 +135,10 @@ void main()
 			{
 				convertToNumber(match, &matchblock);
 			}
-			else {}
+			else {
+				puts("Command not recognized");
+				goto __start__;
+			}
 			tokens->token += match.size;
 			tokens->size -= match.size;
 			numarray.size++;
