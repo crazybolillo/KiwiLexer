@@ -128,7 +128,7 @@ void main()
 			{
 				struct Number *num = kimalloc(sizeof(struct Number),
 					&matchblock);
-				num->value = atoi(tokens->token->value);
+				num->value = atof(tokens->token->value);
 				num->operation = '0';
 			}
 			else if (strcmp(match.id, ERR_ID) != 0)
@@ -245,7 +245,7 @@ struct Number *convertToNumber(struct Match match, struct MemBlock *mem)
 	struct Number *retval = kimalloc(sizeof(struct Number), mem);
 	if (retval != NULL) 
 	{ 
-		retval->value = atoi(tokens->token->value);
+		retval->value = atof(tokens->token->value);
 		retval->operation = *(tokens->token[1].value);
 	}
 	return retval;
