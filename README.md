@@ -5,6 +5,9 @@ If worse is better then UNESCO might as well declare this one of the seven wonde
 
 ## KiwiLexer in a nutshell.
 This Lexer is able to both lex and parse files on Windows and Linux, it should work on Macs too but I am poor so I can't test it. The idea is for you to be able to either use the existing source code to create your own applications which analyze text easily or for you to be able to modify the source code and recompile it so it fits all your needs. 
+
+*(Calculator implemented with the lexer and parser)*
+
 ![Alt text](Screenshot_1.png?raw=true "Calculator implemented with the lexer and parser")
 
 ## Current state
